@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>⚡ Expense Logger</title>
+<style>
+  :root { --navy: #14213d; --amber: #fca311; --bg: #f6f7f9; --border: #d7dbe0; --err: #c5221f; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: #1c1e21; }
+  .wrap { max-width: 420px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 21px; color: var(--navy); text-align: center; padding: 12px 0 16px; }
+  form { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px 16px; }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; color: var(--navy); }
+  label:first-of-type { margin-top: 0; }
+  input, select { width: 100%; font-size: 16px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; }
+  input:focus, select:focus { outline: 2px solid var(--amber); border-color: var(--amber); }
+  .photo-btn {
+    display: block; width: 100%; margin-top: 6px; padding: 14px; text-align: center;
+    border: 2px dashed var(--border); border-radius: 8px; color: #5f6368; font-size: 15px; cursor: pointer;
+  }
+  .photo-btn.has { border-style: solid; border-color: #188038; color: #188038; font-weight: 600; }
+  #photo { display: none; }
+  button { width: 100%; margin-top: 20px; padding: 15px; font-size: 17px; font-weight: 700; color: var(--navy); background: var(--amber); border: 0; border-radius: 8px; cursor: pointer; }
+  button:disabled { opacity: .6; }
+  #msg { display: none; margin-top: 14px; padding: 12px; border-radius: 8px; text-align: center; font-weight: 600; }
+  #msg.good { display: block; background: #e6f4ea; color: #188038; }
+  #msg.bad { display: block; background: #fce8e6; color: var(--err); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚡ Log an expense</h1>
+  <form id="f" novalidate>
+    <label for="amount">Amount ($)</label>
+    <input id="amount" type="number" inputmode="decimal" step="0.01" min="0.01" required>
+
+    <label for="supplier">Supplier</label>
+    <input id="supplier" type="text" maxlength="60" placeholder="e.g. Bunnings" required>
+
+    <label for="category">Category</label>
+    <select id="category">
+      <option>Materials &amp; parts</option>
+      <option>Tools &amp; equipment</option>
+      <option>Motor vehicle</option>
+      <option>Phone &amp; internet</option>
+      <option>Insurance</option>
+      <option>Licences fees &amp; subscriptions</option>
+      <option>Protective clothing &amp; PPE</option>
+      <option>Training &amp; CPD</option>
+      <option>Home office</option>
+      <option>Bank fees</option>
+      <option>Other</option>
+    </select>
+
+    <label for="paymentMethod">Paid with</label>
+    <select id="paymentMethod">
+      <option>Card</option>
+      <option>Cash</option>
+      <option>Bank transfer</option>
+    </select>
+
+    <label for="note">Note <span style="font-weight:400;color:#5f6368;">(optional)</span></label>
+    <input id="note" type="text" maxlength="200" placeholder="e.g. conduit for Smith job">
+
+    <label>Receipt photo</label>
+    <label class="photo-btn" id="photoBtn" for="photo">📷 Snap the receipt</label>
+    <input id="photo" type="file" accept="image/*" capture="environment">
+
+    <button id="go" type="submit">Log it</button>
+    <div id="msg"></div>
+  </form>
+</div>
+
+<script>
+  // ── Deploy config ──────────────────────────────────────────────────────────
+  var ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUfaLwPTEquV_q-5IiJJF6NDc6VXuaZPeQxOj6eVM_4uhnIjb-TsRjJCoAUJlCW9HDNw/exec';
+  // Token comes from the URL so this file holds no secret:
+  // bookmark  log.html?k=<ExpenseToken from the Settings tab>
+  var TOKEN = new URLSearchParams(location.search).get('k') || '';
+  // ───────────────────────────────────────────────────────────────────────────
+
+  var photoData = ''; // dataURL, downscaled
+
+  document.getElementById('photo').addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    var btn = document.getElementById('photoBtn');
+    if (!file) { photoData = ''; btn.classList.remove('has'); btn.textContent = '📷 Snap the receipt'; return; }
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      // Downscale to max 1600px on the long edge — plenty for a legible receipt,
+      // keeps the base64 payload well under Apps Script limits and mobile data sane.
+      var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      photoData = canvas.toDataURL('image/jpeg', 0.8);
+      URL.revokeObjectURL(url);
+      btn.classList.add('has');
+      btn.textContent = '✓ Receipt attached (tap to retake)';
+    };
+    img.onerror = function () {
+      URL.revokeObjectURL(url);
+      photoData = '';
+      btn.textContent = '📷 Snap the receipt (that file didn\'t work)';
+    };
+    img.src = url;
+  });
+
+  document.getElementById('f').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var amount = parseFloat(document.getElementById('amount').value);
+    var supplier = document.getElementById('supplier').value.trim();
+    if (!(amount > 0) || !supplier) return flash('Amount and supplier are needed.', false);
+
+    var btn = document.getElementById('go');
+    btn.disabled = true;
+    btn.textContent = 'Logging…';
+
+    fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // simple request: no preflight
+      body: JSON.stringify({
+        kind: 'expense', k: TOKEN, amount: amount, supplier: supplier,
+        category: document.getElementById('category').value,
+        paymentMethod: document.getElementById('paymentMethod').value,
+        note: document.getElementById('note').value.trim(),
+        photo: photoData
+      })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.ok) {
+          flash('✓ Logged' + (d.receipt ? ' — receipt filed' : '') + '. Onya.', true);
+          document.getElementById('f').reset();
+          photoData = '';
+          var pb = document.getElementById('photoBtn');
+          pb.classList.remove('has');
+          pb.textContent = '📷 Snap the receipt';
+        } else {
+          flash(d && d.error === 'unauthorised'
+            ? 'Bad link — re-open your saved Expense Logger bookmark.'
+            : 'Didn\'t save — check amount and supplier.', false);
+        }
+      })
+      .catch(function () { flash('No connection — try again when you\'ve got signal.', false); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Log it'; });
+  });
+
+  function flash(text, good) {
+    var m = document.getElementById('msg');
+    m.textContent = text;
+    m.className = good ? 'good' : 'bad';
+    if (good) setTimeout(function () { m.className = ''; }, 4000);
+  }
+</script>
+</body>
+</html>

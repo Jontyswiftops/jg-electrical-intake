@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Jarid Gattera — Electrician</title>
+<style>
+  :root {
+    --navy: #14213d;
+    --amber: #fca311;
+    --bg: #f6f7f9;
+    --border: #d7dbe0;
+    --err: #c5221f;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg); color: #1c1e21;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { text-align: center; padding: 20px 0 8px; }
+  .bolt { font-size: 34px; }
+  h1 { font-size: 24px; color: var(--navy); margin: 6px 0 4px; }
+  .sub { color: #5f6368; font-size: 15px; margin-bottom: 20px; text-align: center; }
+  form { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px 18px; }
+  label { display: block; font-weight: 600; font-size: 14px; margin: 16px 0 6px; color: var(--navy); }
+  label:first-of-type { margin-top: 0; }
+  .req::after { content: " *"; color: var(--err); }
+  input, select, textarea {
+    width: 100%; font-size: 16px; /* ≥16px stops iOS zoom */
+    padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: #fff; color: inherit; font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--amber); outline-offset: 0; border-color: var(--amber);
+  }
+  textarea { min-height: 110px; resize: vertical; }
+  .hint { font-size: 13px; color: #5f6368; margin-top: 4px; }
+  .field-err { font-size: 13px; color: var(--err); margin-top: 4px; display: none; }
+  .invalid input, .invalid textarea { border-color: var(--err); }
+  .invalid .field-err { display: block; }
+  button {
+    width: 100%; margin-top: 22px; padding: 15px; font-size: 17px; font-weight: 700;
+    color: var(--navy); background: var(--amber); border: 0; border-radius: 8px; cursor: pointer;
+  }
+  button:disabled { opacity: .6; }
+  .photo-btn {
+    display: block; width: 100%; margin-top: 6px; padding: 14px; text-align: center;
+    border: 2px dashed var(--border); border-radius: 8px; color: #5f6368; font-size: 15px; cursor: pointer;
+  }
+  #photoInput { display: none; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; margin: 8px 8px 0 0;
+    padding: 6px 10px; background: #eef3fb; border-radius: 16px; font-size: 14px; color: var(--navy);
+  }
+  .chip button {
+    width: auto; margin: 0; padding: 0 4px; font-size: 15px; line-height: 1;
+    background: none; border: 0; color: #5f6368; cursor: pointer;
+  }
+  /* Honeypot: visually gone, still in the DOM for bots */
+  .hp { position: absolute; left: -9999px; top: -9999px; height: 0; overflow: hidden; }
+  #done, #fail { display: none; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 28px 20px; text-align: center; }
+  #done h2 { color: #188038; margin-bottom: 10px; }
+  #fail h2 { color: var(--err); margin-bottom: 10px; }
+  .phone-fallback { font-size: 18px; font-weight: 700; color: var(--navy); text-decoration: none; }
+  footer { text-align: center; color: #9aa0a6; font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="bolt">⚡</div>
+    <h1>Jarid Gattera — Electrician</h1>
+  </header>
+  <p class="sub">Tell me about the job and I'll call you back — usually the same day.</p>
+
+  <form id="f" novalidate>
+    <label class="req" for="name">Your name</label>
+    <div class="fw"><input id="name" name="name" type="text" autocomplete="name" maxlength="80" required>
+    <div class="field-err">Please enter your name.</div></div>
+
+    <label class="req" for="phone">Mobile number</label>
+    <div class="fw"><input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" required>
+    <div class="field-err">Please enter a valid Australian phone number.</div></div>
+
+    <label for="email">Email <span style="font-weight:400;color:#5f6368;">(optional)</span></label>
+    <div class="fw"><input id="email" name="email" type="email" autocomplete="email" maxlength="120">
+    <div class="hint">Pop your email in and you'll get an instant confirmation.</div>
+    <div class="field-err">That email doesn't look right.</div></div>
+
+    <label class="req" for="suburb">Suburb</label>
+    <div class="fw"><input id="suburb" name="suburb" type="text" autocomplete="address-level2" maxlength="50" required>
+    <div class="field-err">Please enter your suburb.</div></div>
+
+    <label class="req" for="postcode">Postcode</label>
+    <div class="fw"><input id="postcode" name="postcode" type="text" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required>
+    <div class="field-err">Please enter your 4-digit postcode.</div></div>
+
+    <label class="req" for="propertyType">Property type</label>
+    <select id="propertyType" name="propertyType" required>
+      <option>House</option>
+      <option>Unit or Townhouse</option>
+      <option>Rural</option>
+      <option>Commercial</option>
+      <option>Other</option>
+    </select>
+
+    <label class="req" for="description">What needs doing?</label>
+    <div class="fw"><textarea id="description" name="description" maxlength="1000" required
+      placeholder="e.g. Two new power points in the garage, and the safety switch keeps tripping"></textarea>
+    <div class="field-err">Give me a bit more detail (at least 10 characters).</div></div>
+
+    <label class="req" for="urgency">How urgent?</label>
+    <select id="urgency" name="urgency" required>
+      <option>No power - urgent</option>
+      <option selected>This week</option>
+      <option>Next few weeks</option>
+      <option>Just planning</option>
+    </select>
+
+    <label class="req" for="contactTime">Best time to call</label>
+    <select id="contactTime" name="contactTime" required>
+      <option selected>Anytime</option>
+      <option>Weekday daytime</option>
+      <option>Weekday evening</option>
+      <option>Weekend</option>
+    </select>
+
+    <label for="photoInput">Photos of the job <span style="font-weight:400;color:#5f6368;">(optional, up to 3)</span></label>
+    <label class="photo-btn" id="photoBtn" for="photoInput">📷 Add photos — helps Jarid quote faster</label>
+    <input id="photoInput" type="file" accept="image/*" multiple>
+    <div id="photoChips"></div>
+
+    <!-- honeypot: humans never see or fill this -->
+    <div class="hp" aria-hidden="true">
+      <label for="company">Company</label>
+      <input id="company" name="company" type="text" tabindex="-1" autocomplete="off">
+    </div>
+
+    <button id="go" type="submit">Send it through ⚡</button>
+  </form>
+
+  <div id="done">
+    <h2>Thanks<span id="doneName"></span>! 🎉</h2>
+    <p>Jarid's got your enquiry and will call you — usually the same day.</p>
+    <p class="hint" style="margin-top:12px;">Forgot to add photos? No stress — text them to <a class="phone-fallback" href="sms:+61438987871">0438 987 871</a></p>
+  </div>
+
+  <div id="fail">
+    <h2>Hmm, that didn't go through</h2>
+    <p>No worries — just call or text Jarid directly:</p>
+    <p style="margin-top:12px;"><a class="phone-fallback" href="tel:+61438987871">0438 987 871</a></p>
+  </div>
+
+  <footer>Jarid Gattera · Electrical Contractor Licence LICENCE_NO · ABN ABN_NO</footer>
+</div>
+
+<script>
+  // ── Deploy config: paste from the Job Book's Settings tab ──────────────────
+  var ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUfaLwPTEquV_q-5IiJJF6NDc6VXuaZPeQxOj6eVM_4uhnIjb-TsRjJCoAUJlCW9HDNw/exec';
+  var TOKEN = '2c056e85dab144858fd7b57e2ad87f8d';       // Settings → FormToken
+  // ───────────────────────────────────────────────────────────────────────────
+
+  var t0 = Date.now(); // page-load stamp; server rejects <3s submits (bot signal)
+
+  // ── Photos: up to 3, downscaled to ≤1600px JPEG so the payload stays small ──
+  var photos = []; // [{name, data}]
+  var MAX_PHOTOS = 3;
+
+  function renderChips() {
+    var box = document.getElementById('photoChips');
+    box.innerHTML = '';
+    photos.forEach(function (p, i) {
+      var chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.appendChild(document.createTextNode('📷 ' + p.name));
+      var x = document.createElement('button');
+      x.type = 'button';
+      x.textContent = '✕';
+      x.setAttribute('aria-label', 'Remove ' + p.name);
+      x.onclick = function () { photos.splice(i, 1); renderChips(); };
+      chip.appendChild(x);
+      box.appendChild(chip);
+    });
+    var btn = document.getElementById('photoBtn');
+    btn.textContent = photos.length >= MAX_PHOTOS ? '✓ 3 photos attached (max)'
+      : photos.length ? '📷 Add another photo (' + photos.length + '/' + MAX_PHOTOS + ')'
+      : '📷 Add photos — helps Jarid quote faster';
+  }
+
+  function downscale(file, cb) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      cb(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); cb(null); };
+    img.src = url;
+  }
+
+  document.getElementById('photoInput').addEventListener('change', function () {
+    var files = Array.prototype.slice.call(this.files || []);
+    this.value = ''; // allow re-picking the same file
+    files.forEach(function (file, idx) {
+      if (photos.length + idx >= MAX_PHOTOS) return;
+      downscale(file, function (data) {
+        if (data && photos.length < MAX_PHOTOS) {
+          photos.push({ name: 'Photo ' + (photos.length + 1), data: data });
+          photos.forEach(function (p, i) { p.name = 'Photo ' + (i + 1); });
+          renderChips();
+        }
+      });
+    });
+  });
+
+  function wrapOf(el) { return el.closest('.fw'); }
+  function setInvalid(el, bad) {
+    var w = wrapOf(el);
+    if (w) w.classList.toggle('invalid', bad);
+    return !bad;
+  }
+  function validPhone(v) {
+    var d = v.replace(/[^0-9+]/g, '');
+    return /^(\+?61|0)[0-9]{8,10}$/.test(d);
+  }
+
+  document.getElementById('f').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var name = document.getElementById('name');
+    var phone = document.getElementById('phone');
+    var email = document.getElementById('email');
+    var suburb = document.getElementById('suburb');
+    var postcode = document.getElementById('postcode');
+    var desc = document.getElementById('description');
+
+    var ok = true;
+    ok = setInvalid(name, name.value.trim().length < 2) && ok;
+    ok = setInvalid(phone, !validPhone(phone.value)) && ok;
+    ok = setInvalid(email, !!email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) && ok;
+    ok = setInvalid(suburb, suburb.value.trim().length < 2) && ok;
+    ok = setInvalid(postcode, !/^[0-9]{4}$/.test(postcode.value.trim())) && ok;
+    ok = setInvalid(desc, desc.value.trim().length < 10) && ok;
+    if (!ok) {
+      document.querySelector('.invalid input, .invalid textarea').focus();
+      return;
+    }
+
+    var btn = document.getElementById('go');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    var payload = JSON.stringify({
+      kind: 'enquiry',
+      k: TOKEN,
+      t0: t0,
+      name: name.value.trim(),
+      phone: phone.value.trim(),
+      email: email.value.trim(),
+      suburb: suburb.value.trim(),
+      postcode: postcode.value.trim(),
+      propertyType: document.getElementById('propertyType').value,
+      description: desc.value.trim(),
+      urgency: document.getElementById('urgency').value,
+      contactTime: document.getElementById('contactTime').value,
+      company: document.getElementById('company').value,
+      photos: photos.map(function (p) { return p.data; })
+    });
+
+    // text/plain = CORS "simple request": no preflight (Apps Script can't answer
+    // OPTIONS). fetch follows the 302 to script.googleusercontent.com, whose
+    // response allows any origin, so we can read the JSON ack.
+    fetch(ENDPOINT, { method: 'POST', body: payload, headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.ok) return showDone();
+        throw new Error(data && data.error || 'server');
+      })
+      .catch(function () {
+        // Last resort: fire-and-forget. Losing the ack beats losing the lead.
+        fetch(ENDPOINT, { method: 'POST', body: payload, mode: 'no-cors' })
+          .then(showDone)
+          .catch(showFail);
+      });
+  });
+
+  function showDone() {
+    var n = document.getElementById('name').value.trim().split(/\s+/)[0];
+    if (n) document.getElementById('doneName').textContent = ' ' + n;
+    document.getElementById('f').style.display = 'none';
+    document.getElementById('done').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+  function showFail() {
+    document.getElementById('f').style.display = 'none';
+    document.getElementById('fail').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
