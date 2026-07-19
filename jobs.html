@@ -331,6 +331,14 @@
       A.push({ label:'Lost', style:'danger', run:function (job, el) {
         if (confirm('Mark ' + job.name + ' as Lost?')) send(job, el, { status:'Lost' });
       }});
+    if (s === 'Lost' || s === 'Cancelled')
+      A.push({ label:'Reopen', style:'primary', run:function (job, el) {
+        // Restore to the stage the job's own data says it reached.
+        var back = job.invoiceNo ? 'Invoiced' : job.quoteSent ? 'Quoted' : 'Contacted';
+        if (confirm('Reopen ' + job.name + ' as "' + back + '"?')) {
+          send(job, el, { status: back }, 'Reopening — bringing the folder back too…');
+        }
+      }});
     A.push(promptAct('Note', 'secondary', 'Add a note', 'text', '', function (v) { return { noteAppend: v }; }));
     return A;
   }
