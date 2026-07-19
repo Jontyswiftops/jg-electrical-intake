@@ -65,6 +65,7 @@
   </header>
   <div class="chips" id="chips"></div>
   <div id="list"><div class="empty">Loading jobs…</div></div>
+  <button class="refresh" id="summaryBtn" style="width:100%;margin-top:14px;">Email me the weekly summary</button>
 </div>
 
 <div id="shade"></div>
@@ -433,6 +434,20 @@
   }
 
   document.getElementById('refreshBtn').onclick = load;
+  document.getElementById('summaryBtn').onclick = function () {
+    var b = this;
+    b.disabled = true;
+    b.textContent = 'Sending…';
+    api({ action:'summary' }).then(function (res) {
+      b.disabled = false;
+      b.textContent = 'Email me the weekly summary';
+      toast(res.ok ? 'Summary sent — check your email.' : 'Couldn\'t send — try again.');
+    }).catch(function () {
+      b.disabled = false;
+      b.textContent = 'Email me the weekly summary';
+      toast('No connection — try again with signal.');
+    });
+  };
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible' && document.getElementById('app').style.display !== 'none') load();
   });
