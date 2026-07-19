@@ -45,7 +45,17 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="login" style="display:none;">
+  <div style="max-width:340px;margin:18vh auto 0;background:#fff;border:1px solid var(--border);border-radius:14px;padding:24px 20px;">
+    <h1 style="font-size:20px;color:var(--navy);margin-bottom:4px;">Job Book</h1>
+    <p style="font-size:14px;color:#5f6368;margin-bottom:16px;">Enter the password to open the dashboard.</p>
+    <input id="pwInput" type="password" autocomplete="current-password" style="width:100%;font-size:16px;padding:12px;border:1px solid var(--border);border-radius:8px;">
+    <div id="pwErr" style="display:none;color:var(--err);font-size:13px;margin-top:6px;">That's not it — try again.</div>
+    <button id="pwGo" class="primary" style="width:100%;margin-top:14px;padding:13px;border:0;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">Open</button>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="display:none;">
   <header>
     <div>
       <h1>Job Book</h1>
@@ -71,6 +81,8 @@
 <script>
   var ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUfaLwPTEquV_q-5IiJJF6NDc6VXuaZPeQxOj6eVM_4uhnIjb-TsRjJCoAUJlCW9HDNw/exec';
   var TOKEN = new URLSearchParams(location.search).get('k') || '';
+  var PW = localStorage.getItem('jb_pw') || '';
+  var pwPending = false; // true while a just-typed password awaits server verdict
 
   var GROUPS = {
     'New':     ['New Enquiry', 'Contacted'],
@@ -92,10 +104,36 @@
 
   function api(payload) {
     payload.kind = 'dashboard';
-    payload.k = TOKEN;
+    if (TOKEN) payload.k = TOKEN;
+    if (PW) payload.pw = PW;
     return fetch(ENDPOINT, { method:'POST', body: JSON.stringify(payload),
       headers: { 'Content-Type':'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); });
   }
+
+  function showLogin(withError) {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'block';
+    document.getElementById('pwErr').style.display = withError ? 'block' : 'none';
+    var inp = document.getElementById('pwInput');
+    inp.value = '';
+    setTimeout(function () { inp.focus(); }, 50);
+  }
+  function showApp() {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+  function tryPassword() {
+    var v = document.getElementById('pwInput').value;
+    if (!v) return;
+    PW = v;
+    pwPending = true;
+    document.getElementById('pwGo').textContent = 'Checking…';
+    load();
+  }
+  document.getElementById('pwGo').onclick = tryPassword;
+  document.getElementById('pwInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') tryPassword();
+  });
 
   function money(n) { return '$' + Number(n).toLocaleString('en-AU', { maximumFractionDigits: 0 }); }
   function ago(iso) {
@@ -109,13 +147,22 @@
     document.getElementById('refreshBtn').textContent = 'Loading…';
     api({ action:'list' }).then(function (res) {
       document.getElementById('refreshBtn').textContent = 'Refresh';
+      document.getElementById('pwGo').textContent = 'Open';
       if (!res.ok) {
-        document.getElementById('list').innerHTML =
-          '<div class="empty">' + (res.error === 'unauthorised'
-            ? 'This link isn\'t valid — open your saved Job Book bookmark.'
-            : 'Couldn\'t load — try Refresh.') + '</div>';
+        if (res.error === 'unauthorised') {
+          localStorage.removeItem('jb_pw');
+          var hadPw = pwPending;
+          PW = '';
+          pwPending = false;
+          showLogin(hadPw); // wrong password typed → show error; stale saved pw → plain prompt
+        } else {
+          document.getElementById('list').innerHTML = '<div class="empty">Couldn\'t load — try Refresh.</div>';
+        }
         return;
       }
+      if (PW) localStorage.setItem('jb_pw', PW); // server accepted it — remember this device
+      pwPending = false;
+      showApp();
       state.jobs = res.jobs;
       var g = res.gst;
       var pct = Math.min(100, Math.round(g.rolling / g.threshold * 100));
@@ -310,9 +357,9 @@
 
   document.getElementById('refreshBtn').onclick = load;
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible') load();
+    if (document.visibilityState === 'visible' && document.getElementById('app').style.display !== 'none') load();
   });
-  load();
+  if (TOKEN || PW) { showApp(); load(); } else { showLogin(false); }
 </script>
 </body>
 </html>
