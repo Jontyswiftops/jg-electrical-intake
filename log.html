@@ -71,6 +71,20 @@
     <button id="go" type="submit">Log it</button>
     <div id="msg"></div>
   </form>
+
+  <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 16px;margin-top:14px;">
+    <div style="font-weight:700;color:var(--navy);font-size:16px;">Expense summary</div>
+    <div style="font-size:13px;color:#5f6368;margin:2px 0 10px;">Totals by category — handy at tax time.</div>
+    <label for="sumFrom">From</label>
+    <input id="sumFrom" type="date">
+    <label for="sumTo">To</label>
+    <input id="sumTo" type="date">
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button type="button" id="sumShow" style="flex:1;margin-top:0;">Show</button>
+      <button type="button" id="sumEmail" style="flex:1;margin-top:0;background:#fff;border:1px solid var(--border);color:var(--navy);">Email it</button>
+    </div>
+    <div id="sumOut" style="margin-top:12px;font-size:14.5px;"></div>
+  </div>
 </div>
 
 <script>
@@ -156,6 +170,52 @@
     m.className = good ? 'good' : 'bad';
     if (good) setTimeout(function () { m.className = ''; }, 4000);
   }
+
+  // ── Expense summary: defaults to the current AU financial year to date ─────
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function isoDate(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  (function initSummaryDates() {
+    var now = new Date();
+    var fyYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1; // FY starts 1 July
+    document.getElementById('sumFrom').value = fyYear + '-07-01';
+    document.getElementById('sumTo').value = isoDate(now);
+  })();
+
+  function money(n) {
+    return '$' + Number(n).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fetchSummary(emailIt, btn) {
+    var from = document.getElementById('sumFrom').value;
+    var to = document.getElementById('sumTo').value;
+    if (!from || !to) return flash('Pick both dates first.', false);
+    var original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '…';
+    fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ kind: 'expense', action: 'summary', k: TOKEN, from: from, to: to, email: emailIt })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) return flash(d.error === 'unauthorised' ? 'Bad link — re-open your saved bookmark.' : 'Check the dates and try again.', false);
+        if (emailIt) flash('Summary emailed.', true);
+        var out = document.getElementById('sumOut');
+        if (!d.count) { out.innerHTML = '<div style="color:#5f6368;">No expenses in that range.</div>'; return; }
+        var html = d.byCategory.map(function (c) {
+          return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f1f3;">' +
+            '<span>' + c.category + '</span><span>' + money(c.amount) + '</span></div>';
+        }).join('');
+        html += '<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-weight:700;color:var(--navy);">' +
+          '<span>Total (' + d.count + ' expense' + (d.count === 1 ? '' : 's') + ')</span><span>' + money(d.total) + '</span></div>';
+        out.innerHTML = html;
+      })
+      .catch(function () { flash('No connection — try again with signal.', false); })
+      .finally(function () { btn.disabled = false; btn.textContent = original; });
+  }
+  document.getElementById('sumShow').onclick = function () { fetchSummary(false, this); };
+  document.getElementById('sumEmail').onclick = function () { fetchSummary(true, this); };
 </script>
 </body>
 </html>
