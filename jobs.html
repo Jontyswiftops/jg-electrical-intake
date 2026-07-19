@@ -71,6 +71,9 @@
 <div id="modal">
   <h3 id="mTitle"></h3>
   <input id="mInput" type="text">
+  <div id="mHint" style="display:none;font-size:13.5px;color:#5f6368;margin-top:8px;font-weight:600;"></div>
+  <div id="mLabel2" style="display:none;font-size:13px;font-weight:600;color:var(--navy);margin-top:14px;"></div>
+  <input id="mInput2" type="text" style="display:none;margin-top:6px;">
   <div class="row">
     <button class="secondary" id="mCancel">Cancel</button>
     <button class="primary" id="mOk">Save</button>
@@ -100,7 +103,16 @@
     'Paid':['#efefef','#5f6368'], 'Lost':['#efefef','#9aa0a6'], 'Cancelled':['#efefef','#9aa0a6']
   };
 
-  var state = { jobs: [], filter: 'New' };
+  var state = { jobs: [], filter: 'New', fees: null };
+
+  /** Travel fee for a job from its distance + the Settings zone fees. */
+  function feeFor(j) {
+    var f = state.fees;
+    if (!f || j.km == null) return 0;
+    if (j.km <= f.z1km) return f.z1;
+    if (j.km <= f.z2km) return f.z2;
+    return f.z3;
+  }
 
   function api(payload) {
     payload.kind = 'dashboard';
@@ -164,6 +176,7 @@
       pwPending = false;
       showApp();
       state.jobs = res.jobs;
+      state.fees = res.fees || null;
       var g = res.gst;
       var pct = Math.min(100, Math.round(g.rolling / g.threshold * 100));
       document.getElementById('gst').textContent =
@@ -213,8 +226,12 @@
 
     var meta = [];
     if (j.status === 'New Enquiry') meta.push('came in ' + ago(j.created) + (j.contactTime ? ' · call: ' + esc(j.contactTime) : ''));
-    if (j.quoted && ['Quoted','Accepted','Scheduled','In Progress','Done'].indexOf(j.status) !== -1)
-      meta.push('quoted <b>' + money(j.quoted) + '</b>' + (j.quoteSent ? ' · sent ' + ago(j.quoteSent) : ''));
+    if (j.quoted && ['Quoted','Accepted','Scheduled','In Progress','Done'].indexOf(j.status) !== -1) {
+      var f = feeFor(j);
+      meta.push('quoted <b>' + money(j.quoted) + '</b>' +
+        (f > 0 && j.quoted > f ? ' (incl ' + money(f) + ' travel)' : '') +
+        (j.quoteSent ? ' · sent ' + ago(j.quoteSent) : ''));
+    }
     if (j.scheduled && ['Scheduled','In Progress'].indexOf(j.status) !== -1)
       meta.push('booked <b>' + j.scheduled + '</b>');
     if (j.status === 'Invoiced')
@@ -265,9 +282,23 @@
     var s = j.status;
     if (s === 'New Enquiry') A.push(act('Mark contacted', 'secondary', { status:'Contacted' }));
     if (s === 'New Enquiry' || s === 'Contacted')
-      A.push(promptAct('Quote', 'primary', 'Quote amount ($)', 'number', j.quoted || '', function (v) {
-        return { quoted: Number(v), status: 'Quoted' };
-      }, 'Building quote PDF + email draft…'));
+      A.push({ label:'Quote', style:'primary', run:function (job, el) {
+        var fee = feeFor(job);
+        var presetWork = job.quoted ? Math.max(0, job.quoted - fee) : '';
+        openModal('Job amount ($)', 'number', presetWork, function (v, desc) {
+          if (v === '' || !(Number(v) >= 0)) return;
+          send(job, el, { quoted: Number(v) + fee, workDesc: desc || 'Electrical work', status:'Quoted' },
+            'Building quote PDF…');
+        }, {
+          hint: function (v) {
+            var work = Number(v) || 0;
+            return fee > 0
+              ? '+ ' + money(fee) + ' travel (' + (job.zone || 'zone fee') + ') = ' + money(work + fee) + ' total on the quote'
+              : 'No travel fee — quote total ' + money(work);
+          },
+          input2: { label: 'Description on the quote', preset: job.workDesc || 'Electrical work' }
+        });
+      }});
     if (s === 'Quoted') A.push(act('Accepted', 'primary', { status:'Accepted' }));
     if (s === 'Quoted' || s === 'Accepted')
       A.push(promptAct(s === 'Accepted' ? 'Book date' : 'Book anyway', s === 'Accepted' ? 'primary' : 'secondary',
@@ -277,9 +308,22 @@
     if (s === 'Scheduled') A.push(act('Start job', 'secondary', { status:'In Progress' }), act('Done', 'primary', { status:'Done' }));
     if (s === 'In Progress') A.push(act('Done', 'primary', { status:'Done' }));
     if (s === 'Done')
-      A.push(promptAct('Invoice', 'primary', 'Invoice amount ($)', 'number', j.invoiced || j.quoted || '', function (v) {
-        return { invoiced: Number(v), status: 'Invoiced' };
-      }, 'Building invoice PDF + email draft…'));
+      A.push({ label:'Invoice', style:'primary', run:function (job, el) {
+        var fee = feeFor(job);
+        openModal('Invoice total ($)', 'number', job.invoiced || job.quoted || '', function (v, desc) {
+          if (v === '' || !(Number(v) > 0)) return;
+          send(job, el, { invoiced: Number(v), workDesc: desc || 'Electrical work', status:'Invoiced' },
+            'Building invoice PDF…');
+        }, {
+          hint: function (v) {
+            var t = Number(v) || 0;
+            return fee > 0 && t > fee
+              ? 'Shown on the invoice as ' + money(t - fee) + ' work + ' + money(fee) + ' travel'
+              : 'Invoice total ' + money(t);
+          },
+          input2: { label: 'Description on the invoice', preset: job.workDesc || 'Electrical work' }
+        });
+      }});
     if (s === 'Invoiced')
       A.push(promptAct('Paid', 'primary', 'Amount received ($)', 'number', j.invoiced || '', function (v) {
         return { paid: Number(v), status: 'Paid' };
@@ -321,19 +365,38 @@
     });
   }
 
-  // modal
-  var mCb = null;
-  function openModal(title, type, preset, cb) {
+  // modal — one main input, optional live hint + optional second (text) input
+  var mCb = null, mHintFn = null;
+  function openModal(title, type, preset, cb, extra) {
+    extra = extra || {};
     mCb = cb;
+    mHintFn = extra.hint || null;
     document.getElementById('mTitle').textContent = title;
     var inp = document.getElementById('mInput');
     inp.type = type;
     inp.value = preset;
     if (type === 'number') { inp.inputMode = 'decimal'; inp.min = '0'; }
+    var hint = document.getElementById('mHint');
+    hint.style.display = mHintFn ? 'block' : 'none';
+    if (mHintFn) hint.textContent = mHintFn(preset);
+    var lab2 = document.getElementById('mLabel2');
+    var inp2 = document.getElementById('mInput2');
+    if (extra.input2) {
+      lab2.textContent = extra.input2.label;
+      inp2.value = extra.input2.preset || '';
+      lab2.style.display = 'block';
+      inp2.style.display = 'block';
+    } else {
+      lab2.style.display = 'none';
+      inp2.style.display = 'none';
+    }
     document.getElementById('shade').style.display = 'block';
     document.getElementById('modal').style.display = 'block';
     setTimeout(function () { inp.focus(); }, 50);
   }
+  document.getElementById('mInput').addEventListener('input', function () {
+    if (mHintFn) document.getElementById('mHint').textContent = mHintFn(this.value);
+  });
   function closeModal() {
     document.getElementById('shade').style.display = 'none';
     document.getElementById('modal').style.display = 'none';
@@ -342,8 +405,9 @@
   document.getElementById('shade').onclick = closeModal;
   document.getElementById('mOk').onclick = function () {
     var v = document.getElementById('mInput').value.trim();
+    var v2 = document.getElementById('mInput2').value.trim();
     closeModal();
-    if (mCb) mCb(v);
+    if (mCb) mCb(v, v2);
   };
 
   var toastTimer = null;
