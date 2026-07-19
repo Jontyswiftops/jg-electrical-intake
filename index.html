@@ -84,10 +84,10 @@
     <div class="fw"><input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" required>
     <div class="field-err">Please enter a valid Australian phone number.</div></div>
 
-    <label for="email">Email <span style="font-weight:400;color:#5f6368;">(optional)</span></label>
-    <div class="fw"><input id="email" name="email" type="email" autocomplete="email" maxlength="120">
-    <div class="hint">Pop your email in and you'll get an instant confirmation.</div>
-    <div class="field-err">That email doesn't look right.</div></div>
+    <label class="req" for="email">Email</label>
+    <div class="fw"><input id="email" name="email" type="email" autocomplete="email" maxlength="120" required>
+    <div class="hint">Your confirmation and quote get emailed here.</div>
+    <div class="field-err">Please enter a valid email address.</div></div>
 
     <label class="req" for="suburb">Suburb</label>
     <div class="fw"><input id="suburb" name="suburb" type="text" autocomplete="address-level2" maxlength="50" required>
@@ -243,7 +243,7 @@
     var ok = true;
     ok = setInvalid(name, name.value.trim().length < 2) && ok;
     ok = setInvalid(phone, !validPhone(phone.value)) && ok;
-    ok = setInvalid(email, !!email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) && ok;
+    ok = setInvalid(email, !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) && ok;
     ok = setInvalid(suburb, suburb.value.trim().length < 2) && ok;
     ok = setInvalid(postcode, !/^[0-9]{4}$/.test(postcode.value.trim())) && ok;
     ok = setInvalid(desc, desc.value.trim().length < 10) && ok;
