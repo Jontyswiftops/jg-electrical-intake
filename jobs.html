@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Job Book</title>
+<style>
+  :root { --navy:#14213d; --amber:#fca311; --bg:#f6f7f9; --border:#d7dbe0; --err:#c5221f; --green:#188038; }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:#1c1e21; }
+  .wrap { max-width:520px; margin:0 auto; padding:14px 12px 60px; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:6px 2px 10px; }
+  h1 { font-size:22px; color:var(--navy); }
+  .gst { font-size:12px; color:#5f6368; margin-top:2px; }
+  .refresh { border:1px solid var(--border); background:#fff; border-radius:8px; padding:8px 14px; font-size:14px; font-weight:600; color:var(--navy); cursor:pointer; }
+  .chips { display:flex; gap:6px; overflow-x:auto; padding:4px 2px 12px; -webkit-overflow-scrolling:touch; }
+  .chips button { flex:0 0 auto; border:1px solid var(--border); background:#fff; border-radius:16px; padding:7px 13px; font-size:14px; font-weight:600; color:#5f6368; cursor:pointer; white-space:nowrap; }
+  .chips button.on { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .chips .n { font-weight:700; }
+  .card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .card.busy { opacity:.55; pointer-events:none; }
+  .top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .name { font-size:17px; font-weight:700; color:var(--navy); }
+  .pill { flex:0 0 auto; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:12px; white-space:nowrap; }
+  .where { font-size:13px; color:#5f6368; margin-top:3px; }
+  .desc { font-size:14px; margin-top:8px; color:#333; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; cursor:pointer; }
+  .desc.open { -webkit-line-clamp:unset; }
+  .meta { font-size:13px; color:#5f6368; margin-top:8px; }
+  .meta b { color:#1c1e21; }
+  .row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .row a, .row button { flex:1 1 auto; text-align:center; padding:11px 8px; border-radius:8px; font-size:14.5px; font-weight:700; text-decoration:none; cursor:pointer; border:0; min-width:90px; }
+  .link { background:#eef3fb; color:var(--navy); }
+  .primary { background:var(--amber); color:var(--navy); }
+  .secondary { background:#fff; color:var(--navy); border:1px solid var(--border) !important; }
+  .danger { background:#fff; color:var(--err); border:1px solid var(--border) !important; flex:0 1 auto !important; }
+  .empty { text-align:center; color:#9aa0a6; padding:50px 20px; font-size:15px; }
+  /* modal */
+  #shade { display:none; position:fixed; inset:0; background:rgba(20,33,61,.45); z-index:5; }
+  #modal { display:none; position:fixed; left:50%; top:38%; transform:translate(-50%,-50%); z-index:6; background:#fff; border-radius:14px; padding:20px 18px; width:min(92vw,360px); }
+  #modal h3 { color:var(--navy); font-size:17px; margin-bottom:12px; }
+  #modal input { width:100%; font-size:16px; padding:12px; border:1px solid var(--border); border-radius:8px; }
+  #modal .row { margin-top:14px; }
+  .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; padding:11px 20px; border-radius:10px; font-size:14px; z-index:9; display:none; max-width:92vw; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Job Book</h1>
+      <div class="gst" id="gst"></div>
+    </div>
+    <button class="refresh" id="refreshBtn">Refresh</button>
+  </header>
+  <div class="chips" id="chips"></div>
+  <div id="list"><div class="empty">Loading jobs…</div></div>
+</div>
+
+<div id="shade"></div>
+<div id="modal">
+  <h3 id="mTitle"></h3>
+  <input id="mInput" type="text">
+  <div class="row">
+    <button class="secondary" id="mCancel">Cancel</button>
+    <button class="primary" id="mOk">Save</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  var ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUfaLwPTEquV_q-5IiJJF6NDc6VXuaZPeQxOj6eVM_4uhnIjb-TsRjJCoAUJlCW9HDNw/exec';
+  var TOKEN = new URLSearchParams(location.search).get('k') || '';
+
+  var GROUPS = {
+    'New':     ['New Enquiry', 'Contacted'],
+    'Quoting': ['Quoted', 'Accepted'],
+    'Booked':  ['Scheduled', 'In Progress'],
+    'Invoice': ['Done'],
+    'Owed':    ['Invoiced'],
+    'All':     null
+  };
+  var PILL = {
+    'New Enquiry':['#cfe2f3','#174ea6'], 'Contacted':['#d0e0e3','#205064'],
+    'Quoted':['#fff2cc','#7a5c00'], 'Accepted':['#fce8b2','#7a5c00'],
+    'Scheduled':['#fce5cd','#8a4b00'], 'In Progress':['#f9cb9c','#8a4b00'],
+    'Done':['#d9ead3','#1e6b34'], 'Invoiced':['#d9d2e9','#4b3a86'],
+    'Paid':['#efefef','#5f6368'], 'Lost':['#efefef','#9aa0a6'], 'Cancelled':['#efefef','#9aa0a6']
+  };
+
+  var state = { jobs: [], filter: 'New' };
+
+  function api(payload) {
+    payload.kind = 'dashboard';
+    payload.k = TOKEN;
+    return fetch(ENDPOINT, { method:'POST', body: JSON.stringify(payload),
+      headers: { 'Content-Type':'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); });
+  }
+
+  function money(n) { return '$' + Number(n).toLocaleString('en-AU', { maximumFractionDigits: 0 }); }
+  function ago(iso) {
+    if (!iso) return '';
+    var d = Math.floor((Date.now() - new Date(iso + 'T00:00:00').getTime()) / 86400000);
+    return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + 'd ago';
+  }
+  function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
+
+  function load() {
+    document.getElementById('refreshBtn').textContent = 'Loading…';
+    api({ action:'list' }).then(function (res) {
+      document.getElementById('refreshBtn').textContent = 'Refresh';
+      if (!res.ok) {
+        document.getElementById('list').innerHTML =
+          '<div class="empty">' + (res.error === 'unauthorised'
+            ? 'This link isn\'t valid — open your saved Job Book bookmark.'
+            : 'Couldn\'t load — try Refresh.') + '</div>';
+        return;
+      }
+      state.jobs = res.jobs;
+      var g = res.gst;
+      var pct = Math.min(100, Math.round(g.rolling / g.threshold * 100));
+      document.getElementById('gst').textContent =
+        money(g.rolling) + ' of ' + money(g.threshold) + ' GST threshold (' + pct + '%)';
+      render();
+    }).catch(function () {
+      document.getElementById('refreshBtn').textContent = 'Refresh';
+      toast('No connection — try again with signal.');
+    });
+  }
+
+  function jobsIn(group) {
+    var statuses = GROUPS[group];
+    return statuses ? state.jobs.filter(function (j) { return statuses.indexOf(j.status) !== -1; }) : state.jobs;
+  }
+
+  function render() {
+    var chips = document.getElementById('chips');
+    chips.innerHTML = '';
+    Object.keys(GROUPS).forEach(function (g) {
+      var b = document.createElement('button');
+      var n = jobsIn(g).length;
+      b.innerHTML = esc(g) + (n ? ' <span class="n">' + n + '</span>' : '');
+      if (g === state.filter) b.className = 'on';
+      b.onclick = function () { state.filter = g; render(); };
+      chips.appendChild(b);
+    });
+
+    var list = document.getElementById('list');
+    list.innerHTML = '';
+    var jobs = jobsIn(state.filter);
+    if (!jobs.length) {
+      list.innerHTML = '<div class="empty">Nothing in "' + esc(state.filter) + '" right now.</div>';
+      return;
+    }
+    jobs.forEach(function (j) { list.appendChild(card(j)); });
+  }
+
+  function card(j) {
+    var el = document.createElement('div');
+    el.className = 'card';
+    var pc = PILL[j.status] || ['#eee', '#555'];
+
+    var where = [esc(j.suburb) + (j.postcode ? ' ' + esc(j.postcode) : '')];
+    if (j.km != null) where.push('~' + j.km + ' km' + (j.zone ? ' · ' + esc(j.zone) : ''));
+    if (j.status === 'New Enquiry' && j.urgency) where.push('<b>' + esc(j.urgency) + '</b>');
+
+    var meta = [];
+    if (j.status === 'New Enquiry') meta.push('came in ' + ago(j.created) + (j.contactTime ? ' · call: ' + esc(j.contactTime) : ''));
+    if (j.quoted && ['Quoted','Accepted','Scheduled','In Progress','Done'].indexOf(j.status) !== -1)
+      meta.push('quoted <b>' + money(j.quoted) + '</b>' + (j.quoteSent ? ' · sent ' + ago(j.quoteSent) : ''));
+    if (j.scheduled && ['Scheduled','In Progress'].indexOf(j.status) !== -1)
+      meta.push('booked <b>' + j.scheduled + '</b>');
+    if (j.status === 'Invoiced')
+      meta.push('<b>' + esc(j.invoiceNo) + '</b> · ' + money(j.invoiced) + (j.invoiceSent ? ' · sent ' + ago(j.invoiceSent) : ''));
+    if (j.status === 'Paid') meta.push('paid <b>' + money(j.paid) + '</b> ' + ago(j.paidDate));
+    if (j.notes) meta.push(esc(j.notes));
+
+    el.innerHTML =
+      '<div class="top"><div><div class="name">' + esc(j.name) + '</div>' +
+      '<div class="where">' + where.join(' · ') + '</div></div>' +
+      '<span class="pill" style="background:' + pc[0] + ';color:' + pc[1] + ';">' + esc(j.status) + '</span></div>' +
+      (j.description ? '<div class="desc" onclick="this.classList.toggle(\'open\')">' + esc(j.description) + '</div>' : '') +
+      (meta.length ? '<div class="meta">' + meta.join('<br>') + '</div>' : '');
+
+    var contact = document.createElement('div');
+    contact.className = 'row';
+    if (j.phone) {
+      contact.appendChild(btnLink('Call', 'tel:+61' + j.phone.slice(1)));
+      contact.appendChild(btnLink('Text', 'sms:+61' + j.phone.slice(1)));
+    }
+    if (j.folder) contact.appendChild(btnLink('Folder', j.folder, true));
+    el.appendChild(contact);
+
+    var actions = document.createElement('div');
+    actions.className = 'row';
+    actionsFor(j).forEach(function (a) {
+      var b = document.createElement('button');
+      b.className = a.style || 'secondary';
+      b.textContent = a.label;
+      b.onclick = function () { a.run(j, el); };
+      actions.appendChild(b);
+    });
+    if (actions.children.length) el.appendChild(actions);
+    return el;
+  }
+
+  function btnLink(label, href, blank) {
+    var a = document.createElement('a');
+    a.className = 'link';
+    a.textContent = label;
+    a.href = href;
+    if (blank) a.target = '_blank';
+    return a;
+  }
+
+  function actionsFor(j) {
+    var A = [];
+    var s = j.status;
+    if (s === 'New Enquiry') A.push(act('Mark contacted', 'secondary', { status:'Contacted' }));
+    if (s === 'New Enquiry' || s === 'Contacted')
+      A.push(promptAct('Quote', 'primary', 'Quote amount ($)', 'number', j.quoted || '', function (v) {
+        return { quoted: Number(v), status: 'Quoted' };
+      }, 'Building quote PDF + email draft…'));
+    if (s === 'Quoted') A.push(act('Accepted', 'primary', { status:'Accepted' }));
+    if (s === 'Quoted' || s === 'Accepted')
+      A.push(promptAct(s === 'Accepted' ? 'Book date' : 'Book anyway', s === 'Accepted' ? 'primary' : 'secondary',
+        'Job date', 'date', j.scheduled || '', function (v) {
+          return { scheduled: v, status: 'Scheduled' };
+        }));
+    if (s === 'Scheduled') A.push(act('Start job', 'secondary', { status:'In Progress' }), act('Done', 'primary', { status:'Done' }));
+    if (s === 'In Progress') A.push(act('Done', 'primary', { status:'Done' }));
+    if (s === 'Done')
+      A.push(promptAct('Invoice', 'primary', 'Invoice amount ($)', 'number', j.invoiced || j.quoted || '', function (v) {
+        return { invoiced: Number(v), status: 'Invoiced' };
+      }, 'Building invoice PDF + email draft…'));
+    if (s === 'Invoiced')
+      A.push(promptAct('Paid', 'primary', 'Amount received ($)', 'number', j.invoiced || '', function (v) {
+        return { paid: Number(v), status: 'Paid' };
+      }, 'Booking the income + archiving…'));
+    if (['New Enquiry','Contacted','Quoted','Accepted'].indexOf(s) !== -1)
+      A.push({ label:'Lost', style:'danger', run:function (job, el) {
+        if (confirm('Mark ' + job.name + ' as Lost?')) send(job, el, { status:'Lost' });
+      }});
+    A.push(promptAct('Note', 'secondary', 'Add a note', 'text', '', function (v) { return { noteAppend: v }; }));
+    return A;
+  }
+
+  function act(label, style, set, busyMsg) {
+    return { label: label, style: style, run: function (j, el) { send(j, el, set, busyMsg); } };
+  }
+  function promptAct(label, style, title, type, preset, build, busyMsg) {
+    return { label: label, style: style, run: function (j, el) {
+      openModal(title, type, preset, function (v) {
+        if (v === '' || v == null) return;
+        send(j, el, build(v), busyMsg);
+      });
+    }};
+  }
+
+  function send(j, el, set, busyMsg) {
+    el.classList.add('busy');
+    toast(busyMsg || 'Saving…', true);
+    api({ action:'update', jobId: j.id, set: set }).then(function (res) {
+      if (res.ok) {
+        toast(res.warning ? 'Saved — but an automation hiccuped, check the sheet.' : 'Done.');
+        load();
+      } else {
+        el.classList.remove('busy');
+        toast('That didn\'t save — try again.');
+      }
+    }).catch(function () {
+      el.classList.remove('busy');
+      toast('No connection — nothing changed.');
+    });
+  }
+
+  // modal
+  var mCb = null;
+  function openModal(title, type, preset, cb) {
+    mCb = cb;
+    document.getElementById('mTitle').textContent = title;
+    var inp = document.getElementById('mInput');
+    inp.type = type;
+    inp.value = preset;
+    if (type === 'number') { inp.inputMode = 'decimal'; inp.min = '0'; }
+    document.getElementById('shade').style.display = 'block';
+    document.getElementById('modal').style.display = 'block';
+    setTimeout(function () { inp.focus(); }, 50);
+  }
+  function closeModal() {
+    document.getElementById('shade').style.display = 'none';
+    document.getElementById('modal').style.display = 'none';
+  }
+  document.getElementById('mCancel').onclick = closeModal;
+  document.getElementById('shade').onclick = closeModal;
+  document.getElementById('mOk').onclick = function () {
+    var v = document.getElementById('mInput').value.trim();
+    closeModal();
+    if (mCb) mCb(v);
+  };
+
+  var toastTimer = null;
+  function toast(msg, sticky) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(toastTimer);
+    if (!sticky) toastTimer = setTimeout(function () { t.style.display = 'none'; }, 3000);
+  }
+
+  document.getElementById('refreshBtn').onclick = load;
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') load();
+  });
+  load();
+</script>
+</body>
+</html>
