@@ -233,7 +233,7 @@
         (j.quoteSent ? ' · sent ' + ago(j.quoteSent) : ''));
     }
     if (j.scheduled && ['Scheduled','In Progress'].indexOf(j.status) !== -1)
-      meta.push('booked <b>' + j.scheduled + '</b>');
+      meta.push('booked <b>' + j.scheduled + '</b>' + (j.address ? ' · ' + esc(j.address) : ''));
     if (j.status === 'Invoiced')
       meta.push('<b>' + esc(j.invoiceNo) + '</b> · ' + money(j.invoiced) + (j.invoiceSent ? ' · sent ' + ago(j.invoiceSent) : ''));
     if (j.status === 'Paid') meta.push('paid <b>' + money(j.paid) + '</b> ' + ago(j.paidDate));
@@ -301,12 +301,10 @@
       }});
     if (s === 'Quoted') A.push(act('Accepted', 'primary', { status:'Accepted' }));
     if (s === 'Quoted' || s === 'Accepted')
-      A.push(promptAct(s === 'Accepted' ? 'Book date' : 'Book anyway', s === 'Accepted' ? 'primary' : 'secondary',
-        'Job date', 'date', j.scheduled || '', function (v) {
-          return { scheduled: v, status: 'Scheduled' };
-        }));
+      A.push(bookAct(s === 'Accepted' ? 'Book date' : 'Book anyway', s === 'Accepted' ? 'primary' : 'secondary', true));
     if (s === 'Scheduled') A.push(act('Start job', 'secondary', { status:'In Progress' }), act('Done', 'primary', { status:'Done' }));
     if (s === 'In Progress') A.push(act('Done', 'primary', { status:'Done' }));
+    if (s === 'Scheduled' || s === 'In Progress') A.push(bookAct('Reschedule', 'secondary', false));
     if (s === 'Done')
       A.push({ label:'Invoice', style:'primary', run:function (job, el) {
         var fee = feeFor(job);
@@ -338,6 +336,21 @@
 
   function act(label, style, set, busyMsg) {
     return { label: label, style: style, run: function (j, el) { send(j, el, set, busyMsg); } };
+  }
+
+  /** Book date / Reschedule: date + job address in one modal. The address goes
+      into the register and onto the calendar event as its location. */
+  function bookAct(label, style, setStatus) {
+    return { label: label, style: style, run: function (job, el) {
+      openModal('Job date', 'date', job.scheduled || '', function (v, addr) {
+        if (!v) return;
+        var set = { scheduled: v, address: addr || '' };
+        if (setStatus) set.status = 'Scheduled';
+        send(job, el, set, 'Booking it in + updating the calendar…');
+      }, {
+        input2: { label: 'Job address (goes on the calendar)', preset: job.address || '' }
+      });
+    }};
   }
   function promptAct(label, style, title, type, preset, build, busyMsg) {
     return { label: label, style: style, run: function (j, el) {
