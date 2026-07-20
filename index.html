@@ -73,7 +73,7 @@
 
     <h1>Gattera Electrical Services</h1>
   </header>
-  <p class="sub">Tell me about the job and I'll call you back within 24–48 hours.</p>
+  <p class="sub">Tell me about the job and I'll call you back within 24-48 hours.</p>
 
   <form id="f" novalidate>
     <label class="req" for="name">Your name</label>
@@ -128,7 +128,7 @@
     </select>
 
     <label for="photoInput">Photos of the job <span style="font-weight:400;color:#5f6368;">(optional, up to 3)</span></label>
-    <label class="photo-btn" id="photoBtn" for="photoInput">📷 Add photos — helps Jarid quote faster</label>
+    <label class="photo-btn" id="photoBtn" for="photoInput">📷 Add photos to help Jarid quote faster</label>
     <input id="photoInput" type="file" accept="image/*" multiple>
     <div id="photoChips"></div>
 
@@ -143,13 +143,13 @@
 
   <div id="done">
     <h2>Thanks<span id="doneName"></span>!</h2>
-    <p>Jarid's got your enquiry and will call you within 24–48 hours.</p>
-    <p class="hint" style="margin-top:12px;">Forgot to add photos? No stress — text them to <a class="phone-fallback" href="sms:+61438987871">0438 987 871</a></p>
+    <p>Jarid's got your enquiry and will call you within 24-48 hours.</p>
+    <p class="hint" style="margin-top:12px;">Forgot to add photos? No stress, text them to <a class="phone-fallback" href="sms:+61438987871">0438 987 871</a></p>
   </div>
 
   <div id="fail">
     <h2>Hmm, that didn't go through</h2>
-    <p>No worries — just call or text Jarid directly:</p>
+    <p>No worries, just call or text Jarid directly:</p>
     <p style="margin-top:12px;"><a class="phone-fallback" href="tel:+61438987871">0438 987 871</a></p>
   </div>
 
@@ -186,7 +186,7 @@
     var btn = document.getElementById('photoBtn');
     btn.textContent = photos.length >= MAX_PHOTOS ? '✓ 3 photos attached (max)'
       : photos.length ? '📷 Add another photo (' + photos.length + '/' + MAX_PHOTOS + ')'
-      : '📷 Add photos — helps Jarid quote faster';
+      : '📷 Add photos to help Jarid quote faster';
   }
 
   function downscale(file, cb) {
