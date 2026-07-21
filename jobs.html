@@ -301,7 +301,26 @@
           input2: { label: 'Description on the quote', preset: job.workDesc || 'Electrical work' }
         });
       }});
-    if (s === 'Quoted') A.push(act('Accepted', 'primary', { status:'Accepted' }));
+    if (s === 'Quoted') {
+      A.push(act('Accepted', 'primary', { status:'Accepted' }));
+      A.push({ label:'Amend quote', style:'secondary', run:function (job, el) {
+        var fee = feeFor(job);
+        var presetWork = job.quoted ? Math.max(0, job.quoted - fee) : '';
+        openModal('New job amount ($)', 'number', presetWork, function (v, desc) {
+          if (v === '' || !(Number(v) >= 0)) return;
+          send(job, el, { quoted: Number(v) + fee, workDesc: desc || 'Electrical work', amendQuote: true },
+            'Rebuilding the quote and emailing the update…');
+        }, {
+          hint: function (v) {
+            var work = Number(v) || 0;
+            return fee > 0
+              ? '+ ' + money(fee) + ' travel (' + (job.zone || 'zone fee') + ') = ' + money(work + fee) + ' new quote total'
+              : 'New quote total ' + money(work);
+          },
+          input2: { label: 'Description on the quote', preset: job.workDesc || 'Electrical work' }
+        });
+      }});
+    }
     if (s === 'Quoted' || s === 'Accepted')
       A.push(bookAct(s === 'Accepted' ? 'Book date' : 'Book anyway', s === 'Accepted' ? 'primary' : 'secondary', true));
     if (s === 'Scheduled') A.push(act('Start job', 'secondary', { status:'In Progress' }), act('Done', 'primary', { status:'Done' }));
