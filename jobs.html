@@ -112,7 +112,8 @@
     if (!f || j.km == null) return 0;
     if (j.km <= f.z1km) return f.z1;
     if (j.km <= f.z2km) return f.z2;
-    return f.z3;
+    if (j.km <= (f.z3km || 100)) return f.z3;
+    return f.z4 != null ? f.z4 : f.z3;
   }
 
   function api(payload) {
