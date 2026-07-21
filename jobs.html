@@ -20,6 +20,10 @@
   .chips .n { font-weight:700; }
   .card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px; }
   .card.busy { opacity:.55; pointer-events:none; }
+  .card.accepted-glow { border-left:5px solid var(--green); background:#f4faf6; }
+  .card.needs-invoice { border-left:5px solid var(--err); background:#fdf5f5; }
+  .card.invoice-sent { border-left:5px solid var(--green); }
+  .today-flag { color:#b00020; font-weight:800; }
   .top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
   .name { font-size:17px; font-weight:700; color:var(--navy); }
   .pill { flex:0 0 auto; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:12px; white-space:nowrap; }
@@ -64,6 +68,7 @@
     <button class="refresh" id="refreshBtn">Refresh</button>
   </header>
   <div class="chips" id="chips"></div>
+  <div class="chips" id="sortChips" style="padding-top:0;"></div>
   <div id="list"><div class="empty">Loading jobs…</div></div>
   <button class="refresh" id="summaryBtn" style="width:100%;margin-top:14px;">Email me the weekly summary</button>
 </div>
@@ -104,7 +109,43 @@
     'Paid':['#efefef','#5f6368'], 'Lost':['#efefef','#9aa0a6'], 'Cancelled':['#efefef','#9aa0a6']
   };
 
-  var state = { jobs: [], filter: 'New', fees: null };
+  var state = { jobs: [], filter: 'New', fees: null, sort: 'newest' };
+
+  var SORTS = [['newest','Newest'], ['urgent','Urgent first'], ['closest','Closest'], ['suburb','By suburb']];
+  var URGENCY_RANK = { 'No power - urgent': 0, 'This week': 1, 'Next few weeks': 2, 'Just planning': 3 };
+
+  function localTodayISO() {
+    var n = new Date();
+    return n.getFullYear() + '-' + ('0' + (n.getMonth() + 1)).slice(-2) + '-' + ('0' + n.getDate()).slice(-2);
+  }
+
+  /** Booked lane always runs soonest-first; other lanes follow the sort chips. */
+  function sortedJobs(list) {
+    var l = list.slice();
+    if (state.filter === 'Booked') {
+      return l.sort(function (a, b) {
+        var da = a.scheduled || '9999', db = b.scheduled || '9999';
+        return da < db ? -1 : da > db ? 1 : (a.created < b.created ? -1 : 1);
+      });
+    }
+    if (state.sort === 'urgent') {
+      return l.sort(function (a, b) {
+        var ra = URGENCY_RANK[a.urgency] != null ? URGENCY_RANK[a.urgency] : 4;
+        var rb = URGENCY_RANK[b.urgency] != null ? URGENCY_RANK[b.urgency] : 4;
+        return ra - rb || (a.created < b.created ? -1 : 1);
+      });
+    }
+    if (state.sort === 'closest') {
+      return l.sort(function (a, b) { return (a.km == null ? 1e9 : a.km) - (b.km == null ? 1e9 : b.km); });
+    }
+    if (state.sort === 'suburb') {
+      return l.sort(function (a, b) {
+        var x = (a.suburb || '').toLowerCase(), y = (b.suburb || '').toLowerCase();
+        return x < y ? -1 : x > y ? 1 : (a.km == null ? 1e9 : a.km) - (b.km == null ? 1e9 : b.km);
+      });
+    }
+    return l.sort(function (a, b) { return a.created < b.created ? 1 : -1; });
+  }
 
   /** Travel fee for a job from its distance + the Settings zone fees. */
   function feeFor(j) {
@@ -207,9 +248,24 @@
       chips.appendChild(b);
     });
 
+    var sortEl = document.getElementById('sortChips');
+    sortEl.innerHTML = '';
+    if (state.filter === 'Booked') {
+      sortEl.style.display = 'none'; // fixed soonest-first order
+    } else {
+      sortEl.style.display = 'flex';
+      SORTS.forEach(function (s) {
+        var b = document.createElement('button');
+        b.textContent = s[1];
+        if (s[0] === state.sort) b.className = 'on';
+        b.onclick = function () { state.sort = s[0]; render(); };
+        sortEl.appendChild(b);
+      });
+    }
+
     var list = document.getElementById('list');
     list.innerHTML = '';
-    var jobs = jobsIn(state.filter);
+    var jobs = sortedJobs(jobsIn(state.filter));
     if (!jobs.length) {
       list.innerHTML = '<div class="empty">Nothing in "' + esc(state.filter) + '" right now.</div>';
       return;
@@ -219,7 +275,10 @@
 
   function card(j) {
     var el = document.createElement('div');
-    el.className = 'card';
+    el.className = 'card' +
+      (j.status === 'Accepted' ? ' accepted-glow' :
+       j.status === 'Done' ? ' needs-invoice' :
+       j.status === 'Invoiced' ? ' invoice-sent' : '');
     var pc = PILL[j.status] || ['#eee', '#555'];
 
     var where = [esc(j.suburb) + (j.postcode ? ' ' + esc(j.postcode) : '')];
@@ -235,7 +294,10 @@
         (j.quoteSent ? ' · sent ' + ago(j.quoteSent) : ''));
     }
     if (j.scheduled && ['Scheduled','In Progress'].indexOf(j.status) !== -1)
-      meta.push('booked <b>' + j.scheduled + '</b>' + (j.address ? ' · ' + esc(j.address) : ''));
+      meta.push('booked <b>' + j.scheduled + '</b>' +
+        (j.scheduled === localTodayISO() ? ' <span class="today-flag">TODAY</span>' : '') +
+        (j.address ? ' · ' + esc(j.address) : ''));
+    if (j.status === 'Done') meta.push('<b style="color:#c5221f;">Not invoiced yet</b>');
     if (j.status === 'Invoiced')
       meta.push('<b>' + esc(j.invoiceNo) + '</b> · ' + money(j.invoiced) + (j.invoiceSent ? ' · sent ' + ago(j.invoiceSent) : ''));
     if (j.status === 'Paid') meta.push('paid <b>' + money(j.paid) + '</b> ' + ago(j.paidDate));
