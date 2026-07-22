@@ -29,11 +29,50 @@
   #msg { display: none; margin-top: 14px; padding: 12px; border-radius: 8px; text-align: center; font-weight: 600; }
   #msg.good { display: block; background: #e6f4ea; color: #188038; }
   #msg.bad { display: block; background: #fce8e6; color: var(--err); }
+  /* tabs */
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tabs button { flex: 1; margin: 0; padding: 12px; font-size: 15px; font-weight: 700; background: #fff;
+                 color: #5f6368; border: 1px solid var(--border); border-radius: 8px; }
+  .tabs button.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+  /* reminder cards */
+  .rem { background: #fff; border: 1px solid var(--border); border-left: 5px solid #188038;
+         border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; }
+  .rem.red { border-left-color: var(--err); background: #fdf5f5; }
+  .rem.orange { border-left-color: #e8710a; background: #fff8f0; }
+  .rem .item { font-weight: 700; color: var(--navy); font-size: 15px; }
+  .rem .when { font-size: 13px; color: #5f6368; margin-top: 3px; }
+  .rem .when b { color: #1c1e21; }
+  .rem .note { font-size: 12.5px; color: #9aa0a6; margin-top: 3px; }
+  .rem .del { float: right; width: auto; margin: 0; padding: 2px 6px; background: none; border: 0;
+              color: #9aa0a6; font-size: 17px; line-height: 1; cursor: pointer; }
+  .rem-empty { text-align: center; color: #9aa0a6; padding: 26px 10px; font-size: 14.5px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Log an expense</h1>
+  <h1>Expenses &amp; reminders</h1>
+  <div class="tabs">
+    <button type="button" id="tabExpense" class="on">Log expense</button>
+    <button type="button" id="tabReminders">Reminders</button>
+  </div>
+
+  <div id="paneReminders" style="display:none;">
+    <div id="remList"><div class="rem-empty">Loading…</div></div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 16px;margin-top:14px;">
+      <div style="font-weight:700;color:var(--navy);font-size:16px;">Add a key date</div>
+      <div style="font-size:13px;color:#5f6368;margin:2px 0 10px;">Licences, insurance, domain renewal, rego, anything with an expiry.</div>
+      <label for="remItem">What is it</label>
+      <input id="remItem" type="text" maxlength="80" placeholder="e.g. Domain renewal">
+      <label for="remDate">Expires on</label>
+      <input id="remDate" type="date">
+      <label for="remNotes">Note <span style="font-weight:400;color:#5f6368;">(optional)</span></label>
+      <input id="remNotes" type="text" maxlength="200" placeholder="e.g. renews through VentraIP">
+      <button type="button" id="remAdd">Save reminder</button>
+      <div id="remMsg" style="display:none;margin-top:12px;padding:12px;border-radius:8px;text-align:center;font-weight:600;"></div>
+    </div>
+  </div>
+
+  <div id="paneExpense">
   <form id="f" novalidate>
     <label for="amount">Amount ($)</label>
     <input id="amount" type="number" inputmode="decimal" step="0.01" min="0.01" required>
@@ -86,6 +125,7 @@
       <button type="button" id="sumEmail" style="flex:1;margin-top:0;background:#fff;border:1px solid var(--border);color:var(--navy);">Email it</button>
     </div>
     <div id="sumOut" style="margin-top:12px;font-size:14.5px;"></div>
+  </div>
   </div>
 </div>
 
@@ -218,6 +258,100 @@
   }
   document.getElementById('sumShow').onclick = function () { fetchSummary(false, this); };
   document.getElementById('sumEmail').onclick = function () { fetchSummary(true, this); };
+
+  // ── Tabs ───────────────────────────────────────────────────────────────────
+  function showTab(which) {
+    var isExp = which === 'expense';
+    document.getElementById('paneExpense').style.display = isExp ? 'block' : 'none';
+    document.getElementById('paneReminders').style.display = isExp ? 'none' : 'block';
+    document.getElementById('tabExpense').className = isExp ? 'on' : '';
+    document.getElementById('tabReminders').className = isExp ? '' : 'on';
+    if (!isExp) loadReminders();
+  }
+  document.getElementById('tabExpense').onclick = function () { showTab('expense'); };
+  document.getElementById('tabReminders').onclick = function () { showTab('reminders'); };
+
+  // ── Reminders ──────────────────────────────────────────────────────────────
+  function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
+
+  function remApi(payload) {
+    payload.kind = 'expense';
+    payload.k = TOKEN;
+    return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); });
+  }
+
+  function loadReminders() {
+    var box = document.getElementById('remList');
+    box.innerHTML = '<div class="rem-empty">Loading…</div>';
+    remApi({ action: 'reminders' }).then(function (d) {
+      if (!d.ok) {
+        box.innerHTML = '<div class="rem-empty">' + (d.error === 'unauthorised'
+          ? 'Bad link, re-open your saved bookmark.' : 'Couldn\'t load reminders.') + '</div>';
+        return;
+      }
+      if (!d.reminders.length) {
+        box.innerHTML = '<div class="rem-empty">Nothing tracked yet. Add your first key date below.</div>';
+        return;
+      }
+      box.innerHTML = '';
+      d.reminders.forEach(function (r) { box.appendChild(remCard(r)); });
+    }).catch(function () {
+      box.innerHTML = '<div class="rem-empty">No connection, try again with signal.</div>';
+    });
+  }
+
+  function remCard(r) {
+    var el = document.createElement('div');
+    el.className = 'rem' + (r.days <= 30 ? ' red' : r.days <= 60 ? ' orange' : '');
+    var when;
+    if (r.days < 0) when = '<b style="color:#c5221f;">Expired ' + Math.abs(r.days) + ' day' + (Math.abs(r.days) === 1 ? '' : 's') + ' ago</b>';
+    else if (r.days === 0) when = '<b style="color:#c5221f;">Expires today</b>';
+    else when = '<b>' + r.days + ' day' + (r.days === 1 ? '' : 's') + '</b> to go';
+    el.innerHTML =
+      '<button class="del" title="Remove">&times;</button>' +
+      '<div class="item">' + esc(r.item) + '</div>' +
+      '<div class="when">' + when + ' &middot; ' + esc(r.date) + '</div>' +
+      (r.notes ? '<div class="note">' + esc(r.notes) + '</div>' : '');
+    el.querySelector('.del').onclick = function () {
+      if (!confirm('Remove "' + r.item + '" from reminders?')) return;
+      remApi({ action: 'deleteReminder', item: r.item }).then(function (d) {
+        if (d.ok) loadReminders(); else remFlash('Couldn\'t remove that one.', false);
+      }).catch(function () { remFlash('No connection.', false); });
+    };
+    return el;
+  }
+
+  document.getElementById('remAdd').onclick = function () {
+    var item = document.getElementById('remItem').value.trim();
+    var date = document.getElementById('remDate').value;
+    var notes = document.getElementById('remNotes').value.trim();
+    if (!item || !date) return remFlash('Name it and pick a date first.', false);
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    remApi({ action: 'addReminder', item: item, date: date, notes: notes }).then(function (d) {
+      if (d.ok) {
+        remFlash(d.updated ? 'Updated.' : 'Saved.', true);
+        document.getElementById('remItem').value = '';
+        document.getElementById('remDate').value = '';
+        document.getElementById('remNotes').value = '';
+        loadReminders();
+      } else {
+        remFlash(d.error === 'unauthorised' ? 'Bad link, re-open your bookmark.' : 'Check the name and date.', false);
+      }
+    }).catch(function () { remFlash('No connection, try again with signal.', false); })
+      .finally(function () { btn.disabled = false; btn.textContent = 'Save reminder'; });
+  };
+
+  function remFlash(text, good) {
+    var m = document.getElementById('remMsg');
+    m.textContent = text;
+    m.style.display = 'block';
+    m.style.background = good ? '#e6f4ea' : '#fce8e6';
+    m.style.color = good ? '#188038' : 'var(--err)';
+    if (good) setTimeout(function () { m.style.display = 'none'; }, 4000);
+  }
 </script>
 </body>
 </html>
