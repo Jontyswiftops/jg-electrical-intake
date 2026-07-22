@@ -307,7 +307,9 @@
 
     el.innerHTML =
       '<div class="top"><div><div class="name">' + esc(j.name) + '</div>' +
-      '<div class="where">' + where.join(' · ') + '</div></div>' +
+      '<div class="where">' + where.join(' · ') + '</div>' +
+      (j.email ? '<div class="where" style="word-break:break-all;"><a href="mailto:' + esc(j.email) + '" style="color:#5f6368;">' + esc(j.email) + '</a></div>' : '') +
+      '</div>' +
       '<span class="pill" style="background:' + pc[0] + ';color:' + pc[1] + ';">' + esc(j.status) + '</span></div>' +
       (j.description ? '<div class="desc" onclick="this.classList.toggle(\'open\')">' + esc(j.description) + '</div>' : '') +
       (meta.length ? '<div class="meta">' + meta.join('<br>') + '</div>' : '');
@@ -407,10 +409,15 @@
           input2: { label: 'Description on the invoice', preset: job.workDesc || 'Electrical work' }
         });
       }});
-    if (s === 'Invoiced')
+    if (s === 'Invoiced') {
       A.push(promptAct('Paid', 'primary', 'Amount received ($)', 'number', j.invoiced || '', function (v) {
         return { paid: Number(v), status: 'Paid' };
       }, 'Booking the income + archiving…'));
+      // For clients Jarid would rather not invite to review: same receipt, no review line.
+      A.push(promptAct('Paid, no review ask', 'secondary', 'Amount received ($)', 'number', j.invoiced || '', function (v) {
+        return { paid: Number(v), status: 'Paid', skipReview: true };
+      }, 'Booking the income + archiving…'));
+    }
     if (['New Enquiry','Contacted','Quoted','Accepted'].indexOf(s) !== -1)
       A.push({ label:'Lost', style:'danger', run:function (job, el) {
         if (confirm('Mark ' + job.name + ' as Lost?')) send(job, el, { status:'Lost' });
