@@ -49,7 +49,17 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="login" style="display:none;">
+  <div style="max-width:340px;margin:16vh auto 0;background:#fff;border:1px solid var(--border);border-radius:14px;padding:24px 20px;">
+    <div style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:4px;">Expenses &amp; reminders</div>
+    <p style="font-size:14px;color:#5f6368;margin-bottom:16px;">Enter the password to continue.</p>
+    <input id="pwInput" type="password" autocomplete="current-password">
+    <div id="pwErr" style="display:none;color:var(--err);font-size:13px;margin-top:6px;">That's not it, try again.</div>
+    <button type="button" id="pwGo">Open</button>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="display:none;">
   <h1>Expenses &amp; reminders</h1>
   <div class="tabs">
     <button type="button" id="tabExpense" class="on">Log expense</button>
@@ -115,7 +125,7 @@
 
   <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 16px;margin-top:14px;">
     <div style="font-weight:700;color:var(--navy);font-size:16px;">Expense summary</div>
-    <div style="font-size:13px;color:#5f6368;margin:2px 0 10px;">Totals by category — handy at tax time.</div>
+    <div style="font-size:13px;color:#5f6368;margin:2px 0 10px;">Totals by category, handy at tax time.</div>
     <label for="sumFrom">From</label>
     <input id="sumFrom" type="date">
     <label for="sumTo">To</label>
@@ -132,10 +142,78 @@
 <script>
   // ── Deploy config ──────────────────────────────────────────────────────────
   var ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUfaLwPTEquV_q-5IiJJF6NDc6VXuaZPeQxOj6eVM_4uhnIjb-TsRjJCoAUJlCW9HDNw/exec';
-  // Token comes from the URL so this file holds no secret:
-  // bookmark  log.html?k=<ExpenseToken from the Settings tab>
+  // Two ways in: the ?k=<ExpenseToken> bookmark, or the password (same one as
+  // the Job Book dashboard, and the same saved-device key, so one login covers both).
   var TOKEN = new URLSearchParams(location.search).get('k') || '';
+  var PW = localStorage.getItem('jb_pw') || '';
+  var pwPending = false;
   // ───────────────────────────────────────────────────────────────────────────
+
+  /** Every call to the backend goes through here so auth is always attached. */
+  function api(payload) {
+    payload.kind = 'expense';
+    if (TOKEN) payload.k = TOKEN;
+    if (PW) payload.pw = PW;
+    return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); });
+  }
+
+  function showLogin(withError) {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'block';
+    document.getElementById('pwErr').style.display = withError ? 'block' : 'none';
+    var i = document.getElementById('pwInput');
+    i.value = '';
+    setTimeout(function () { i.focus(); }, 50);
+  }
+  function showApp() {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  }
+  function authFailed() {
+    localStorage.removeItem('jb_pw');
+    var typed = pwPending;
+    PW = '';
+    pwPending = false;
+    document.getElementById('pwGo').textContent = 'Open';
+    showLogin(typed);
+  }
+  function tryPassword() {
+    var v = document.getElementById('pwInput').value;
+    if (!v) return;
+    PW = v;
+    pwPending = true;
+    document.getElementById('pwGo').textContent = 'Checking…';
+    api({ action: 'reminders' }).then(function (d) {
+      document.getElementById('pwGo').textContent = 'Open';
+      if (d && d.ok) {
+        localStorage.setItem('jb_pw', PW);
+        pwPending = false;
+        showApp();
+      } else {
+        authFailed();
+      }
+    }).catch(function () {
+      document.getElementById('pwGo').textContent = 'Open';
+      document.getElementById('pwErr').textContent = 'No connection, try again.';
+      document.getElementById('pwErr').style.display = 'block';
+    });
+  }
+  document.getElementById('pwGo').onclick = tryPassword;
+  document.getElementById('pwInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') tryPassword();
+  });
+
+  if (TOKEN) {
+    showApp();
+  } else if (PW) {
+    showApp(); // optimistic, then quietly confirm the saved password still works
+    api({ action: 'reminders' }).then(function (d) {
+      if (d && !d.ok && d.error === 'unauthorised') authFailed();
+    }).catch(function () {});
+  } else {
+    showLogin(false);
+  }
 
   var photoData = ''; // dataURL, downscaled
 
@@ -146,7 +224,7 @@
     var img = new Image();
     var url = URL.createObjectURL(file);
     img.onload = function () {
-      // Downscale to max 1600px on the long edge — plenty for a legible receipt,
+      // Downscale to max 1600px on the long edge: plenty for a legible receipt,
       // keeps the base64 payload well under Apps Script limits and mobile data sane.
       var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
       var canvas = document.createElement('canvas');
@@ -176,21 +254,17 @@
     btn.disabled = true;
     btn.textContent = 'Logging…';
 
-    fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // simple request: no preflight
-      body: JSON.stringify({
-        kind: 'expense', k: TOKEN, amount: amount, supplier: supplier,
-        category: document.getElementById('category').value,
-        paymentMethod: document.getElementById('paymentMethod').value,
-        note: document.getElementById('note').value.trim(),
-        photo: photoData
-      })
+    api({
+      amount: amount, supplier: supplier,
+      category: document.getElementById('category').value,
+      paymentMethod: document.getElementById('paymentMethod').value,
+      note: document.getElementById('note').value.trim(),
+      photo: photoData
     })
-      .then(function (r) { return r.json(); })
       .then(function (d) {
+        if (d && !d.ok && d.error === 'unauthorised' && !TOKEN) return authFailed();
         if (d && d.ok) {
-          flash('✓ Logged' + (d.receipt ? ' — receipt filed' : '') + '. Onya.', true);
+          flash('✓ Logged' + (d.receipt ? ', receipt filed' : '') + '. Onya.', true);
           document.getElementById('f').reset();
           photoData = '';
           var pb = document.getElementById('photoBtn');
@@ -198,11 +272,11 @@
           pb.textContent = '📷 Snap the receipt';
         } else {
           flash(d && d.error === 'unauthorised'
-            ? 'Bad link — re-open your saved Expense Logger bookmark.'
-            : 'Didn\'t save — check amount and supplier.', false);
+            ? 'Bad link, re-open your saved Expense Logger bookmark.'
+            : 'Didn\'t save , check amount and supplier.', false);
         }
       })
-      .catch(function () { flash('No connection — try again when you\'ve got signal.', false); })
+      .catch(function () { flash('No connection, try again when you\'ve got signal.', false); })
       .finally(function () { btn.disabled = false; btn.textContent = 'Log it'; });
   });
 
@@ -234,14 +308,12 @@
     var original = btn.textContent;
     btn.disabled = true;
     btn.textContent = '…';
-    fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ kind: 'expense', action: 'summary', k: TOKEN, from: from, to: to, email: emailIt })
-    })
-      .then(function (r) { return r.json(); })
+    api({ action: 'summary', from: from, to: to, email: emailIt })
       .then(function (d) {
-        if (!d.ok) return flash(d.error === 'unauthorised' ? 'Bad link — re-open your saved bookmark.' : 'Check the dates and try again.', false);
+        if (!d.ok) {
+          if (d.error === 'unauthorised' && !TOKEN) return authFailed();
+          return flash(d.error === 'unauthorised' ? 'Bad link, re-open your saved bookmark.' : 'Check the dates and try again.', false);
+        }
         if (emailIt) flash('Summary emailed.', true);
         var out = document.getElementById('sumOut');
         if (!d.count) { out.innerHTML = '<div style="color:#5f6368;">No expenses in that range.</div>'; return; }
@@ -253,7 +325,7 @@
           '<span>Total (' + d.count + ' expense' + (d.count === 1 ? '' : 's') + ')</span><span>' + money(d.total) + '</span></div>';
         out.innerHTML = html;
       })
-      .catch(function () { flash('No connection — try again with signal.', false); })
+      .catch(function () { flash('No connection, try again with signal.', false); })
       .finally(function () { btn.disabled = false; btn.textContent = original; });
   }
   document.getElementById('sumShow').onclick = function () { fetchSummary(false, this); };
@@ -274,12 +346,7 @@
   // ── Reminders ──────────────────────────────────────────────────────────────
   function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
 
-  function remApi(payload) {
-    payload.kind = 'expense';
-    payload.k = TOKEN;
-    return fetch(ENDPOINT, { method: 'POST', body: JSON.stringify(payload),
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); });
-  }
+  var remApi = api;
 
   function loadReminders() {
     var box = document.getElementById('remList');
