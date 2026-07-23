@@ -48,6 +48,33 @@
   #modal input { width:100%; font-size:16px; padding:12px; border:1px solid var(--border); border-radius:8px; }
   #modal .row { margin-top:14px; }
   .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; padding:11px 20px; border-radius:10px; font-size:14px; z-index:9; display:none; max-width:92vw; text-align:center; }
+  /* safety record overlay */
+  #safety { display:none; position:fixed; inset:0; background:var(--bg); z-index:30; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .sf-wrap { max-width:520px; margin:0 auto; padding:14px 12px 80px; }
+  .sf-head { display:flex; justify-content:space-between; align-items:center; padding:4px 2px 12px; }
+  .sf-head h2 { font-size:19px; color:var(--navy); }
+  .sf-close { border:1px solid var(--border); background:#fff; border-radius:8px; padding:7px 13px; font-size:14px; font-weight:600; color:var(--navy); cursor:pointer; }
+  .sf-card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:15px 14px; margin-bottom:10px; }
+  .sf-card h3 { font-size:15.5px; color:var(--navy); margin-bottom:8px; }
+  .sf-tier { display:flex; gap:8px; }
+  .sf-tier button { flex:1; padding:14px 8px; border-radius:10px; font-size:14.5px; font-weight:700; border:1px solid var(--border); background:#fff; color:var(--navy); cursor:pointer; }
+  .sf-tier button.on { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .sf-check { display:flex; align-items:flex-start; gap:9px; padding:7px 2px; font-size:14.5px; }
+  .sf-check input { width:19px; height:19px; margin-top:1px; flex:0 0 auto; }
+  .sf-haz { border:1px solid var(--border); border-radius:10px; padding:11px 12px; margin-top:9px; }
+  .sf-haz .hz-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .sf-haz .hz-name { font-weight:700; color:var(--navy); font-size:14.5px; }
+  .rate { font-size:11.5px; font-weight:800; padding:3px 9px; border-radius:11px; white-space:nowrap; }
+  .rate.Low { background:#d9ead3; color:#1e6b34; } .rate.Medium { background:#fce8b2; color:#7a5c00; }
+  .rate.High { background:#f4c7c3; color:#a01c15; } .rate.Extreme { background:#e06666; color:#fff; }
+  .sf-haz .hz-sel { display:flex; gap:8px; margin-top:8px; }
+  .sf-haz select { flex:1; font-size:14px; padding:8px; border:1px solid var(--border); border-radius:7px; background:#fff; }
+  .sf-haz .hz-ctl { margin-top:6px; }
+  .sf-input { width:100%; font-size:15px; padding:11px; border:1px solid var(--border); border-radius:8px; margin-top:8px; font-family:inherit; }
+  .sf-sub { font-size:12.5px; color:#5f6368; margin-top:4px; }
+  .sf-go { width:100%; margin-top:6px; padding:15px; font-size:16px; font-weight:800; color:var(--navy); background:var(--amber); border:0; border-radius:10px; cursor:pointer; }
+  .sf-go:disabled { opacity:.6; }
+  .sf-skip { display:block; text-align:center; margin-top:14px; font-size:13px; color:#9aa0a6; background:none; border:0; text-decoration:underline; cursor:pointer; width:100%; }
 </style>
 </head>
 <body>
@@ -87,6 +114,59 @@
     <button class="primary" id="mOk">Save</button>
   </div>
 </div>
+<div id="safety">
+  <div class="sf-wrap">
+    <div class="sf-head">
+      <h2 id="sfTitle">Safety record</h2>
+      <button class="sf-close" id="sfClose">Cancel</button>
+    </div>
+
+    <div class="sf-card">
+      <h3>Any high-risk work on this job?</h3>
+      <div class="sf-tier">
+        <button type="button" id="sfTierQuick" class="on">No, quick pre-start</button>
+        <button type="button" id="sfTierFull">Yes, full SWMS</button>
+      </div>
+    </div>
+
+    <div id="sfQuick">
+      <div class="sf-card">
+        <h3>Pre-start checks</h3>
+        <div id="sfQuickChecks"></div>
+        <input class="sf-input" id="sfQuickNote" type="text" maxlength="200" placeholder="Anything unusual about this site? (optional)">
+      </div>
+    </div>
+
+    <div id="sfFull" style="display:none;">
+      <div class="sf-card">
+        <h3>High-risk construction work involved</h3>
+        <div id="sfHrcw"></div>
+      </div>
+      <div class="sf-card">
+        <h3>Hazards on this job</h3>
+        <div id="sfHazPick"></div>
+        <input class="sf-input" id="sfHazCustom" type="text" maxlength="100" placeholder="Add another hazard and press +">
+        <button type="button" class="sf-close" id="sfHazAdd" style="margin-top:8px;">+ Add hazard</button>
+      </div>
+      <div class="sf-card" id="sfHazDetailCard" style="display:none;">
+        <h3>Ratings and controls</h3>
+        <div class="sf-sub">Rating updates as you set likelihood and severity. Untick any control that does not apply, or add your own below.</div>
+        <div id="sfHazDetails"></div>
+        <input class="sf-input" id="sfExtraControls" type="text" maxlength="300" placeholder="Any other controls for this job? (optional)">
+      </div>
+    </div>
+
+    <div class="sf-card">
+      <h3>Sign off</h3>
+      <input class="sf-input" id="sfName" type="text" maxlength="60" value="Jarid Gattera" style="margin-top:0;">
+      <label class="sf-check" style="margin-top:6px;"><input type="checkbox" id="sfConfirm">
+        <span>I prepared this record and will implement and monitor these controls on site.</span></label>
+      <button type="button" class="sf-go" id="sfSubmit">File record &amp; start job</button>
+      <button type="button" class="sf-skip" id="sfSkip">Start the job without a safety record</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -389,8 +469,14 @@
     }
     if (s === 'Quoted' || s === 'Accepted')
       A.push(bookAct(s === 'Accepted' ? 'Book date' : 'Book anyway', s === 'Accepted' ? 'primary' : 'secondary', true));
-    if (s === 'Scheduled') A.push(act('Start job', 'secondary', { status:'In Progress' }), act('Done', 'primary', { status:'Done' }));
-    if (s === 'In Progress') A.push(act('Done', 'primary', { status:'Done' }));
+    if (s === 'Scheduled') {
+      A.push({ label:'Start job', style:'secondary', run:function (job, el) { openSafety(job, el, true); } });
+      A.push(act('Done', 'primary', { status:'Done' }));
+    }
+    if (s === 'In Progress') {
+      A.push(act('Done', 'primary', { status:'Done' }));
+      A.push({ label:'Safety record', style:'secondary', run:function (job, el) { openSafety(job, el, false); } });
+    }
     if (s === 'Scheduled' || s === 'In Progress') A.push(bookAct('Reschedule', 'secondary', false));
     if (s === 'Done')
       A.push({ label:'Invoice', style:'primary', run:function (job, el) {
@@ -531,6 +617,230 @@
     clearTimeout(toastTimer);
     if (!sticky) toastTimer = setTimeout(function () { t.style.display = 'none'; }, 3000);
   }
+
+  // ── Safety record (SWMS / pre-start) ───────────────────────────────────────
+  var HRCW_LIST = [
+    'Work on or near energised electrical installations',
+    'Risk of a fall of more than 2 metres (3 m in housing construction)',
+    'Disturbing material likely to contain asbestos',
+    'Work in a confined space',
+    'Work near traffic or mobile plant'
+  ];
+  var QUICK_CHECKS = [
+    'Power isolated and locked out before work',
+    'Tested for dead before touching conductors',
+    'Work area tidy, leads managed',
+    'Occupants aware of the work'
+  ];
+  var HAZARD_MAP = {
+    'Electric shock or arc flash': { l:'Possible', s:'Critical', c:['Isolate supply and lock out / tag out','Test for dead before touching','Insulated tools and voltage-rated gloves','Safety observer if energised work is unavoidable'] },
+    'Falls from ladder or roof': { l:'Possible', s:'Serious', c:['Ladder at 4:1 with three points of contact','Work positioning or EWP for extended heights','Keep ground area below clear'] },
+    'Asbestos (pre-1990 board or sheeting)': { l:'Unlikely', s:'Critical', c:['Treat pre-1990 materials as containing asbestos','No drilling or cutting suspect material','Stop work and arrange licensed assessment if suspected'] },
+    'Ceiling or roof space work': { l:'Possible', s:'Serious', c:['Work early or ventilate the space','Walk on joists only','Check for old wiring before entry','Regular hydration breaks'] },
+    'Occupants, children or pets on site': { l:'Likely', s:'Minor', c:['Close off the work area','Brief the occupant before starting','Covers stay on unless attended'] },
+    'Power tools and drilling': { l:'Possible', s:'Serious', c:['RCD protection on all tools and leads','Test and tag in date','Eye and ear protection','Dust control'] },
+    'Manual handling': { l:'Possible', s:'Minor', c:['Split heavy loads','Use trolley or mechanical aid where possible'] },
+    'Slips, trips and leads': { l:'Possible', s:'Minor', c:['Run leads out of walkways','Keep the work area tidy'] },
+    'Sun and heat exposure': { l:'Likely', s:'Minor', c:['Sunscreen and hat','Regular water breaks'] }
+  };
+  var L_SCORE = { 'Unlikely':1, 'Possible':2, 'Likely':3 };
+  var S_SCORE = { 'Minor':1, 'Serious':2, 'Critical':3 };
+  function riskRating(l, s) {
+    var score = (L_SCORE[l] || 2) * (S_SCORE[s] || 2);
+    return score >= 9 ? 'Extreme' : score >= 6 ? 'High' : score >= 3 ? 'Medium' : 'Low';
+  }
+
+  var sf = { job: null, el: null, startJob: true, tier: 'quick', hazards: {} };
+
+  function openSafety(job, cardEl, startJob) {
+    sf.job = job; sf.el = cardEl; sf.startJob = startJob; sf.tier = 'quick'; sf.hazards = {};
+    document.getElementById('sfTitle').textContent = 'Safety record: ' + job.name;
+    document.getElementById('sfSubmit').textContent = startJob ? 'File record & start job' : 'File safety record';
+    document.getElementById('sfSkip').style.display = startJob ? 'block' : 'none';
+    document.getElementById('sfConfirm').checked = false;
+    document.getElementById('sfQuickNote').value = '';
+    document.getElementById('sfExtraControls').value = '';
+    document.getElementById('sfHazCustom').value = '';
+    setTier('quick');
+
+    var qc = document.getElementById('sfQuickChecks');
+    qc.innerHTML = '';
+    QUICK_CHECKS.forEach(function (c) {
+      var lab = document.createElement('label');
+      lab.className = 'sf-check';
+      lab.innerHTML = '<input type="checkbox" checked data-check="1"><span>' + esc(c) + '</span>';
+      qc.appendChild(lab);
+    });
+
+    var hw = document.getElementById('sfHrcw');
+    hw.innerHTML = '';
+    HRCW_LIST.forEach(function (c) {
+      var lab = document.createElement('label');
+      lab.className = 'sf-check';
+      lab.innerHTML = '<input type="checkbox" data-hrcw="1"><span>' + esc(c) + '</span>';
+      hw.appendChild(lab);
+    });
+
+    var hp = document.getElementById('sfHazPick');
+    hp.innerHTML = '';
+    Object.keys(HAZARD_MAP).forEach(function (name) { hp.appendChild(hazPickRow(name)); });
+    renderHazDetails();
+
+    document.getElementById('safety').style.display = 'block';
+    document.getElementById('safety').scrollTop = 0;
+  }
+
+  function hazPickRow(name) {
+    var lab = document.createElement('label');
+    lab.className = 'sf-check';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.onchange = function () {
+      if (cb.checked) {
+        var d = HAZARD_MAP[name] || { l:'Possible', s:'Serious', c:[] };
+        sf.hazards[name] = { likelihood: d.l, severity: d.s, controls: (d.c || []).slice(), off: {} };
+      } else {
+        delete sf.hazards[name];
+      }
+      renderHazDetails();
+    };
+    var span = document.createElement('span');
+    span.textContent = name;
+    lab.appendChild(cb); lab.appendChild(span);
+    return lab;
+  }
+
+  function renderHazDetails() {
+    var box = document.getElementById('sfHazDetails');
+    var names = Object.keys(sf.hazards);
+    document.getElementById('sfHazDetailCard').style.display = names.length ? 'block' : 'none';
+    box.innerHTML = '';
+    names.forEach(function (name) {
+      var h = sf.hazards[name];
+      var div = document.createElement('div');
+      div.className = 'sf-haz';
+      var rating = riskRating(h.likelihood, h.severity);
+      div.innerHTML = '<div class="hz-top"><span class="hz-name">' + esc(name) + '</span>' +
+        '<span class="rate ' + rating + '">' + rating + '</span></div>';
+      var sel = document.createElement('div');
+      sel.className = 'hz-sel';
+      sel.appendChild(mkSelect(['Unlikely','Possible','Likely'], h.likelihood, function (v) { h.likelihood = v; renderHazDetails(); }));
+      sel.appendChild(mkSelect(['Minor','Serious','Critical'], h.severity, function (v) { h.severity = v; renderHazDetails(); }));
+      div.appendChild(sel);
+      var ctl = document.createElement('div');
+      ctl.className = 'hz-ctl';
+      h.controls.forEach(function (c, i) {
+        var lab = document.createElement('label');
+        lab.className = 'sf-check';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !h.off[i];
+        cb.onchange = function () { h.off[i] = !cb.checked; };
+        var sp = document.createElement('span');
+        sp.textContent = c;
+        lab.appendChild(cb); lab.appendChild(sp);
+        ctl.appendChild(lab);
+      });
+      div.appendChild(ctl);
+      box.appendChild(div);
+    });
+  }
+
+  function mkSelect(opts, val, onChange) {
+    var s = document.createElement('select');
+    opts.forEach(function (o) {
+      var op = document.createElement('option');
+      op.textContent = o;
+      if (o === val) op.selected = true;
+      s.appendChild(op);
+    });
+    s.onchange = function () { onChange(s.value); };
+    return s;
+  }
+
+  function setTier(t) {
+    sf.tier = t;
+    document.getElementById('sfTierQuick').className = t === 'quick' ? 'on' : '';
+    document.getElementById('sfTierFull').className = t === 'full' ? 'on' : '';
+    document.getElementById('sfQuick').style.display = t === 'quick' ? 'block' : 'none';
+    document.getElementById('sfFull').style.display = t === 'full' ? 'block' : 'none';
+  }
+  document.getElementById('sfTierQuick').onclick = function () { setTier('quick'); };
+  document.getElementById('sfTierFull').onclick = function () { setTier('full'); };
+  document.getElementById('sfClose').onclick = function () { document.getElementById('safety').style.display = 'none'; };
+
+  document.getElementById('sfHazAdd').onclick = function () {
+    var name = document.getElementById('sfHazCustom').value.trim();
+    if (!name || sf.hazards[name]) return;
+    sf.hazards[name] = { likelihood:'Possible', severity:'Serious', controls: [], off: {} };
+    document.getElementById('sfHazCustom').value = '';
+    var hp = document.getElementById('sfHazPick');
+    var row = hazPickRow(name);
+    row.querySelector('input').checked = true;
+    hp.appendChild(row);
+    renderHazDetails();
+  };
+
+  document.getElementById('sfSkip').onclick = function () {
+    if (!confirm('Start the job with no safety record on file? The daily email will keep flagging it until one is filed.')) return;
+    document.getElementById('safety').style.display = 'none';
+    send(sf.job, sf.el, { status: 'In Progress' });
+  };
+
+  document.getElementById('sfSubmit').onclick = function () {
+    if (!document.getElementById('sfConfirm').checked) { toast('Tick the sign-off box first.'); return; }
+    var payload = {
+      action: 'safety',
+      jobId: sf.job.id,
+      startJob: sf.startJob,
+      type: sf.tier,
+      signedBy: document.getElementById('sfName').value.trim() || 'Jarid Gattera',
+      notes: sf.tier === 'quick' ? document.getElementById('sfQuickNote').value.trim()
+                                 : document.getElementById('sfExtraControls').value.trim()
+    };
+    if (sf.tier === 'quick') {
+      payload.quickChecks = [];
+      var boxes = document.querySelectorAll('#sfQuickChecks input');
+      for (var i = 0; i < boxes.length; i++) {
+        if (boxes[i].checked) payload.quickChecks.push(QUICK_CHECKS[i]);
+      }
+    } else {
+      payload.hrcw = [];
+      var hb = document.querySelectorAll('#sfHrcw input');
+      for (var j = 0; j < hb.length; j++) {
+        if (hb[j].checked) payload.hrcw.push(HRCW_LIST[j]);
+      }
+      payload.hazards = Object.keys(sf.hazards).map(function (name) {
+        var h = sf.hazards[name];
+        return {
+          name: name,
+          likelihood: h.likelihood,
+          severity: h.severity,
+          rating: riskRating(h.likelihood, h.severity),
+          controls: h.controls.filter(function (c, i) { return !h.off[i]; })
+        };
+      });
+      if (!payload.hazards.length) { toast('Tick at least one hazard, or use the quick pre-start.'); return; }
+    }
+    var btn = document.getElementById('sfSubmit');
+    btn.disabled = true;
+    btn.textContent = 'Filing the PDF…';
+    api(payload).then(function (res) {
+      btn.disabled = false;
+      btn.textContent = sf.startJob ? 'File record & start job' : 'File safety record';
+      if (res.ok) {
+        document.getElementById('safety').style.display = 'none';
+        toast(sf.startJob ? 'Safety record filed. Job started.' : 'Safety record filed.');
+        load();
+      } else {
+        toast('That didn\'t save, try again.');
+      }
+    }).catch(function () {
+      btn.disabled = false;
+      btn.textContent = sf.startJob ? 'File record & start job' : 'File safety record';
+      toast('No connection, nothing filed.');
+    });
+  };
 
   document.getElementById('refreshBtn').onclick = load;
   document.getElementById('summaryBtn').onclick = function () {
