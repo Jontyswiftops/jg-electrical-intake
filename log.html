@@ -46,6 +46,45 @@
   .rem .del { float: right; width: auto; margin: 0; padding: 2px 6px; background: none; border: 0;
               color: #9aa0a6; font-size: 17px; line-height: 1; cursor: pointer; }
   .rem-empty { text-align: center; color: #9aa0a6; padding: 26px 10px; font-size: 14.5px; }
+  /* money tab */
+  .viz-root { --viz-in: #2a78d6; --viz-out: #eb6834; --pipe-1: #2a78d6; --pipe-2: #6da7ec; --pipe-3: #86b6ef;
+              --ink: #1c1e21; --ink-2: #52514e; --ink-3: #898781; --grid: #e1e0d9; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px 14px 12px; }
+  .tile .tl { font-size: 12.5px; color: var(--ink-2); }
+  .tile .tv { font-size: 22px; font-weight: 600; color: var(--ink); margin-top: 3px; }
+  .tile.aside { border-left: 5px solid #fab219; }
+  .tile.spend-ok .tv { color: #006300; }
+  .tile.spend-bad .tv { color: var(--err); }
+  .mcard { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px 14px; margin-top: 12px; }
+  .mcard h3 { font-size: 15px; color: var(--navy); margin-bottom: 2px; }
+  .mcard .sub { font-size: 12.5px; color: var(--ink-2); margin-bottom: 12px; }
+  .legend { display: flex; gap: 14px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 10px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .chart { display: flex; align-items: flex-end; gap: 10px; height: 150px; border-bottom: 1px solid #c3c2b7; }
+  .mgroup { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; position: relative; }
+  .bars { display: flex; gap: 2px; align-items: flex-end; justify-content: center; height: 100%; }
+  .bar { width: 14px; max-width: 24px; border-radius: 4px 4px 0 0; min-height: 2px; }
+  .bar.in { background: var(--viz-in); }
+  .bar.out { background: var(--viz-out); }
+  .mlabels { display: flex; gap: 10px; margin-top: 6px; }
+  .mlabels span { flex: 1; text-align: center; font-size: 11.5px; color: var(--ink-3); }
+  .blabel { position: absolute; top: -2px; left: 0; right: 0; text-align: center; font-size: 10.5px; color: var(--ink-2); }
+  .viz-tip { position: fixed; background: var(--navy); color: #fff; font-size: 12.5px; padding: 7px 11px;
+             border-radius: 8px; z-index: 30; pointer-events: none; display: none; white-space: nowrap; }
+  .pipe-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f0f1f3; font-size: 14px; }
+  .pipe-row:last-child { border-bottom: 0; }
+  .pipe-row i { width: 12px; height: 12px; border-radius: 4px; flex: 0 0 auto; }
+  .pipe-row .pl { flex: 1; color: var(--ink); }
+  .pipe-row .pn { color: var(--ink-3); font-size: 12.5px; }
+  .pipe-row .pv { font-weight: 700; color: var(--ink); }
+  .proj { font-size: 13.5px; color: var(--ink-2); line-height: 1.6; }
+  .proj b { color: var(--ink); }
+  details.dtable { margin-top: 10px; }
+  details.dtable summary { font-size: 12.5px; color: var(--ink-3); cursor: pointer; }
+  details.dtable table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  details.dtable td, details.dtable th { padding: 4px 6px; text-align: right; border-bottom: 1px solid #f0f1f3; color: var(--ink-2); }
+  details.dtable th:first-child, details.dtable td:first-child { text-align: left; }
 </style>
 </head>
 <body>
@@ -62,9 +101,43 @@
 <div class="wrap" id="app" style="display:none;">
   <h1>Expenses &amp; reminders</h1>
   <div class="tabs">
-    <button type="button" id="tabExpense" class="on">Log expense</button>
+    <button type="button" id="tabExpense" class="on">Expenses</button>
+    <button type="button" id="tabMoney">Money</button>
     <button type="button" id="tabReminders">Reminders</button>
   </div>
+
+  <div id="paneMoney" class="viz-root" style="display:none;">
+    <div class="tiles">
+      <div class="tile"><div class="tl">Money in · <span id="mzFyLabel"></span></div><div class="tv" id="mzIn"></div></div>
+      <div class="tile"><div class="tl">Money out</div><div class="tv" id="mzOut"></div></div>
+      <div class="tile aside"><div class="tl">Set aside for tax (<span id="mzPct"></span>%)</div><div class="tv" id="mzTax"></div></div>
+      <div class="tile" id="mzSpendTile"><div class="tl">Safe to spend</div><div class="tv" id="mzSpend"></div></div>
+    </div>
+
+    <div class="mcard">
+      <h3>In vs out, last 6 months</h3>
+      <div class="sub">Tap a month for the numbers.</div>
+      <div class="legend">
+        <span><i style="background:var(--viz-in);"></i>Money in</span>
+        <span><i style="background:var(--viz-out);"></i>Money out</span>
+      </div>
+      <div class="chart" id="mzChart"></div>
+      <div class="mlabels" id="mzChartLabels"></div>
+      <details class="dtable"><summary>View as table</summary><table id="mzTable"></table></details>
+    </div>
+
+    <div class="mcard">
+      <h3>Coming up</h3>
+      <div class="sub">Work in the pipeline that has not hit the bank yet.</div>
+      <div id="mzPipe"></div>
+    </div>
+
+    <div class="mcard">
+      <h3>The year ahead</h3>
+      <div class="proj" id="mzProj"></div>
+    </div>
+  </div>
+  <div class="viz-tip" id="mzTip"></div>
 
   <div id="paneReminders" style="display:none;">
     <div id="remList"><div class="rem-empty">Loading…</div></div>
@@ -333,15 +406,107 @@
 
   // ── Tabs ───────────────────────────────────────────────────────────────────
   function showTab(which) {
-    var isExp = which === 'expense';
-    document.getElementById('paneExpense').style.display = isExp ? 'block' : 'none';
-    document.getElementById('paneReminders').style.display = isExp ? 'none' : 'block';
-    document.getElementById('tabExpense').className = isExp ? 'on' : '';
-    document.getElementById('tabReminders').className = isExp ? '' : 'on';
-    if (!isExp) loadReminders();
+    var panes = { expense: 'paneExpense', money: 'paneMoney', reminders: 'paneReminders' };
+    var tabs = { expense: 'tabExpense', money: 'tabMoney', reminders: 'tabReminders' };
+    Object.keys(panes).forEach(function (k) {
+      document.getElementById(panes[k]).style.display = k === which ? 'block' : 'none';
+      document.getElementById(tabs[k]).className = k === which ? 'on' : '';
+    });
+    if (which === 'reminders') loadReminders();
+    if (which === 'money') loadMoney();
   }
   document.getElementById('tabExpense').onclick = function () { showTab('expense'); };
+  document.getElementById('tabMoney').onclick = function () { showTab('money'); };
   document.getElementById('tabReminders').onclick = function () { showTab('reminders'); };
+
+  // ── Money overview ─────────────────────────────────────────────────────────
+  function money0(n) { return '$' + Math.round(Number(n) || 0).toLocaleString('en-AU'); }
+
+  function loadMoney() {
+    api({ action: 'money' }).then(function (d) {
+      if (!d.ok) {
+        if (d.error === 'unauthorised' && !TOKEN) return authFailed();
+        return remFlash('Couldn\'t load the money view.', false);
+      }
+      renderMoney(d);
+    }).catch(function () { remFlash('No connection, try again with signal.', false); });
+  }
+
+  function renderMoney(d) {
+    var setAside = d.fy.income * d.taxPct / 100;
+    var spend = d.fy.income - d.fy.expense - setAside;
+    document.getElementById('mzFyLabel').textContent = d.fy.label;
+    document.getElementById('mzIn').textContent = money0(d.fy.income);
+    document.getElementById('mzOut').textContent = money0(d.fy.expense);
+    document.getElementById('mzPct').textContent = d.taxPct;
+    document.getElementById('mzTax').textContent = money0(setAside);
+    document.getElementById('mzSpend').textContent = money0(spend);
+    document.getElementById('mzSpendTile').className = 'tile ' + (spend >= 0 ? 'spend-ok' : 'spend-bad');
+
+    // chart: grouped columns, scaled to the biggest month
+    var peak = 1;
+    d.months.forEach(function (m) { peak = Math.max(peak, m.inn, m.out); });
+    var chart = document.getElementById('mzChart');
+    var labels = document.getElementById('mzChartLabels');
+    chart.innerHTML = '';
+    labels.innerHTML = '';
+    d.months.forEach(function (m, i) {
+      var g = document.createElement('div');
+      g.className = 'mgroup';
+      var isLast = i === d.months.length - 1;
+      g.innerHTML =
+        (isLast && (m.inn || m.out) ? '<div class="blabel">' + money0(m.inn) + '</div>' : '') +
+        '<div class="bars">' +
+        '<div class="bar in" style="height:' + Math.max(m.inn / peak * 100, 1.5) + '%"></div>' +
+        '<div class="bar out" style="height:' + Math.max(m.out / peak * 100, 1.5) + '%"></div>' +
+        '</div>';
+      g.onclick = function (ev) {
+        var tip = document.getElementById('mzTip');
+        tip.textContent = m.label + ': ' + money0(m.inn) + ' in, ' + money0(m.out) + ' out';
+        tip.style.display = 'block';
+        var r = g.getBoundingClientRect();
+        tip.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 180)) + 'px';
+        tip.style.top = (r.top - 34) + 'px';
+        clearTimeout(g._t);
+        g._t = setTimeout(function () { tip.style.display = 'none'; }, 2500);
+      };
+      chart.appendChild(g);
+      var lb = document.createElement('span');
+      lb.textContent = m.label;
+      labels.appendChild(lb);
+    });
+
+    // table view (accessibility fallback for the chart)
+    var t = document.getElementById('mzTable');
+    t.innerHTML = '<tr><th>Month</th><th>In</th><th>Out</th></tr>' +
+      d.months.map(function (m) {
+        return '<tr><td>' + m.label + '</td><td>' + money0(m.inn) + '</td><td>' + money0(m.out) + '</td></tr>';
+      }).join('');
+
+    // pipeline rows, most certain first
+    var p = d.pipeline;
+    var pipe = document.getElementById('mzPipe');
+    var rows = [
+      { c: 'var(--pipe-1)', l: 'Owed to you', n: p.owedN, v: p.owed, note: 'invoiced, waiting on payment' },
+      { c: 'var(--pipe-2)', l: 'Won, not yet invoiced', n: p.wonN, v: p.won, note: 'accepted or booked in' },
+      { c: 'var(--pipe-3)', l: 'Quoted, waiting on a yes', n: p.quotedN, v: p.quoted, note: 'no answer yet' }
+    ];
+    pipe.innerHTML = rows.map(function (r) {
+      return '<div class="pipe-row"><i style="background:' + r.c + ';"></i>' +
+        '<span class="pl">' + r.l + ' <span class="pn">(' + r.n + ' job' + (r.n === 1 ? '' : 's') + ', ' + r.note + ')</span></span>' +
+        '<span class="pv">' + money0(r.v) + '</span></div>';
+    }).join('');
+
+    // projection: run-rate + what the pipeline would add
+    var projTax = d.projectedIncome * d.taxPct / 100;
+    var proj = document.getElementById('mzProj');
+    var certain = p.owed + p.won;
+    proj.innerHTML =
+      'At the current pace (' + d.monthsElapsed + ' month' + (d.monthsElapsed === 1 ? '' : 's') + ' into ' + d.fy.label + '), ' +
+      'the year lands around <b>' + money0(d.projectedIncome) + '</b> in, meaning roughly <b>' + money0(projTax) + '</b> set aside for tax.' +
+      (certain > 0 ? '<br>On top of money already banked, there is <b>' + money0(certain) + '</b> owed or locked in from the pipeline above.' : '') +
+      (d.monthsElapsed < 3 ? '<br><span style="color:var(--ink-3);">Early days, treat this as a rough guide until a few months are in.</span>' : '');
+  }
 
   // ── Reminders ──────────────────────────────────────────────────────────────
   function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
