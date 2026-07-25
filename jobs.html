@@ -75,6 +75,14 @@
   .sf-go { width:100%; margin-top:6px; padding:15px; font-size:16px; font-weight:800; color:var(--navy); background:var(--amber); border:0; border-radius:10px; cursor:pointer; }
   .sf-go:disabled { opacity:.6; }
   .sf-skip { display:block; text-align:center; margin-top:14px; font-size:13px; color:#9aa0a6; background:none; border:0; text-decoration:underline; cursor:pointer; width:100%; }
+  /* line-item editor rows */
+  .le-row { display:flex; gap:7px; margin-top:8px; }
+  .le-row input.le-t { flex:1; font-size:15px; padding:11px; border:1px solid var(--border); border-radius:8px; }
+  .le-row input.le-a { flex:0 0 92px; font-size:15px; padding:11px 8px; border:1px solid var(--border); border-radius:8px; }
+  .le-row button { flex:0 0 auto; width:auto; margin:0; padding:0 10px; background:none; border:0; color:#9aa0a6; font-size:19px; cursor:pointer; }
+  .le-total { display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:15px; }
+  .le-total b { color:var(--navy); font-size:17px; }
+  .hdr-btns { display:flex; gap:8px; }
 </style>
 </head>
 <body>
@@ -94,7 +102,10 @@
       <h1>Job Book</h1>
       <div class="gst" id="gst"></div>
     </div>
-    <button class="refresh" id="refreshBtn">Refresh</button>
+    <div class="hdr-btns">
+      <button class="refresh" id="addJobBtn" style="background:var(--amber);border-color:var(--amber);">+ Add job</button>
+      <button class="refresh" id="refreshBtn">Refresh</button>
+    </div>
   </header>
   <div class="chips" id="chips"></div>
   <div class="chips" id="sortChips" style="padding-top:0;"></div>
@@ -114,6 +125,49 @@
     <button class="primary" id="mOk">Save</button>
   </div>
 </div>
+<div id="addJob" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;">
+  <div class="sf-wrap">
+    <div class="sf-head">
+      <h2>Add a job</h2>
+      <button class="sf-close" id="ajClose">Cancel</button>
+    </div>
+    <div class="sf-card">
+      <div class="sf-sub" style="margin-bottom:10px;">For phone and word-of-mouth clients who didn't use the form. They land at Contacted, then quote or book as usual.</div>
+      <input class="sf-input" id="ajName" type="text" maxlength="80" placeholder="Client name *" style="margin-top:0;">
+      <input class="sf-input" id="ajPhone" type="tel" maxlength="20" placeholder="Mobile *">
+      <input class="sf-input" id="ajEmail" type="email" maxlength="120" placeholder="Email (needed for quotes and invoices by email)">
+      <div style="display:flex;gap:8px;">
+        <input class="sf-input" id="ajSuburb" type="text" maxlength="50" placeholder="Suburb *" style="flex:1;">
+        <input class="sf-input" id="ajPostcode" type="text" inputmode="numeric" maxlength="4" placeholder="Postcode" style="flex:0 0 110px;">
+      </div>
+      <input class="sf-input" id="ajAddress" type="text" maxlength="120" placeholder="Address (optional)">
+      <input class="sf-input" id="ajDesc" type="text" maxlength="300" placeholder="What's the work? (optional)">
+      <button type="button" class="sf-go" id="ajSave">Add job</button>
+    </div>
+  </div>
+</div>
+
+<div id="lineEd" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;">
+  <div class="sf-wrap">
+    <div class="sf-head">
+      <h2 id="leTitle">Quote</h2>
+      <button class="sf-close" id="leClose">Cancel</button>
+    </div>
+    <div class="sf-card">
+      <h3>What's on the job</h3>
+      <div class="sf-sub">One line per item, like "2 x power points". Prices per line are optional. Price every line and the total adds itself.</div>
+      <div id="leRows"></div>
+      <button type="button" class="sf-close" id="leAdd" style="margin-top:10px;">+ Add line</button>
+    </div>
+    <div class="sf-card">
+      <div class="le-total"><span>Job amount (before travel)</span><input class="le-a" id="leWork" type="number" inputmode="decimal" min="0" style="font-weight:700;"></div>
+      <div class="le-total" id="leTravelRow"><span id="leTravelLabel">Travel</span><span id="leTravelAmt"></span></div>
+      <div class="le-total"><span><b>Total on the document</b></span><b id="leGrand"></b></div>
+      <button type="button" class="sf-go" id="leSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="safety">
   <div class="sf-wrap">
     <div class="sf-head">
@@ -429,43 +483,14 @@
     var A = [];
     var s = j.status;
     if (s === 'New Enquiry') A.push(act('Mark contacted', 'secondary', { status:'Contacted' }));
-    if (s === 'New Enquiry' || s === 'Contacted')
-      A.push({ label:'Quote', style:'primary', run:function (job, el) {
-        var fee = feeFor(job);
-        var presetWork = job.quoted ? Math.max(0, job.quoted - fee) : '';
-        openModal('Job amount ($)', 'number', presetWork, function (v, desc) {
-          if (v === '' || !(Number(v) >= 0)) return;
-          send(job, el, { quoted: Number(v) + fee, workDesc: desc || 'Electrical work', status:'Quoted' },
-            'Building quote PDF…');
-        }, {
-          hint: function (v) {
-            var work = Number(v) || 0;
-            return fee > 0
-              ? '+ ' + money(fee) + ' travel (' + (job.zone || 'zone fee') + ') = ' + money(work + fee) + ' total on the quote'
-              : 'No travel fee — quote total ' + money(work);
-          },
-          input2: { label: 'Description on the quote', preset: job.workDesc || 'Electrical work' }
-        });
-      }});
+    if (s === 'New Enquiry' || s === 'Contacted') {
+      A.push({ label:'Quote', style:'primary', run:function (job, el) { openLineEditor(job, el, 'quote'); } });
+      // "Skip the quote, just book me in" clients go straight to a date.
+      A.push(bookAct('Book date', 'secondary', true));
+    }
     if (s === 'Quoted') {
       A.push(act('Accepted', 'primary', { status:'Accepted' }));
-      A.push({ label:'Amend quote', style:'secondary', run:function (job, el) {
-        var fee = feeFor(job);
-        var presetWork = job.quoted ? Math.max(0, job.quoted - fee) : '';
-        openModal('New job amount ($)', 'number', presetWork, function (v, desc) {
-          if (v === '' || !(Number(v) >= 0)) return;
-          send(job, el, { quoted: Number(v) + fee, workDesc: desc || 'Electrical work', amendQuote: true },
-            'Rebuilding the quote and emailing the update…');
-        }, {
-          hint: function (v) {
-            var work = Number(v) || 0;
-            return fee > 0
-              ? '+ ' + money(fee) + ' travel (' + (job.zone || 'zone fee') + ') = ' + money(work + fee) + ' new quote total'
-              : 'New quote total ' + money(work);
-          },
-          input2: { label: 'Description on the quote', preset: job.workDesc || 'Electrical work' }
-        });
-      }});
+      A.push({ label:'Amend quote', style:'secondary', run:function (job, el) { openLineEditor(job, el, 'amend'); } });
     }
     if (s === 'Quoted' || s === 'Accepted')
       A.push(bookAct(s === 'Accepted' ? 'Book date' : 'Book anyway', s === 'Accepted' ? 'primary' : 'secondary', true));
@@ -479,22 +504,7 @@
     }
     if (s === 'Scheduled' || s === 'In Progress') A.push(bookAct('Reschedule', 'secondary', false));
     if (s === 'Done')
-      A.push({ label:'Invoice', style:'primary', run:function (job, el) {
-        var fee = feeFor(job);
-        openModal('Invoice total ($)', 'number', job.invoiced || job.quoted || '', function (v, desc) {
-          if (v === '' || !(Number(v) > 0)) return;
-          send(job, el, { invoiced: Number(v), workDesc: desc || 'Electrical work', status:'Invoiced' },
-            'Building invoice PDF…');
-        }, {
-          hint: function (v) {
-            var t = Number(v) || 0;
-            return fee > 0 && t > fee
-              ? 'Shown on the invoice as ' + money(t - fee) + ' work + ' + money(fee) + ' travel'
-              : 'Invoice total ' + money(t);
-          },
-          input2: { label: 'Description on the invoice', preset: job.workDesc || 'Electrical work' }
-        });
-      }});
+      A.push({ label:'Invoice', style:'primary', run:function (job, el) { openLineEditor(job, el, 'invoice'); } });
     if (s === 'Invoiced') {
       A.push(promptAct('Paid', 'primary', 'Amount received ($)', 'number', j.invoiced || '', function (v) {
         return { paid: Number(v), status: 'Paid' };
@@ -840,6 +850,134 @@
       btn.textContent = sf.startJob ? 'File record & start job' : 'File safety record';
       toast('No connection, nothing filed.');
     });
+  };
+
+  // ── Add job (phone / word-of-mouth clients) ────────────────────────────────
+  document.getElementById('addJobBtn').onclick = function () {
+    ['ajName','ajPhone','ajEmail','ajSuburb','ajPostcode','ajAddress','ajDesc'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('addJob').style.display = 'block';
+    document.getElementById('addJob').scrollTop = 0;
+  };
+  document.getElementById('ajClose').onclick = function () { document.getElementById('addJob').style.display = 'none'; };
+  document.getElementById('ajSave').onclick = function () {
+    var name = document.getElementById('ajName').value.trim();
+    var phone = document.getElementById('ajPhone').value.trim();
+    var suburb = document.getElementById('ajSuburb').value.trim();
+    if (name.length < 2 || suburb.length < 2 || phone.replace(/[^0-9]/g, '').length < 8) {
+      toast('Name, mobile and suburb are needed.');
+      return;
+    }
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Adding…';
+    api({
+      action: 'addJob', name: name, phone: phone, suburb: suburb,
+      email: document.getElementById('ajEmail').value.trim(),
+      postcode: document.getElementById('ajPostcode').value.trim(),
+      address: document.getElementById('ajAddress').value.trim(),
+      desc: document.getElementById('ajDesc').value.trim()
+    }).then(function (res) {
+      btn.disabled = false;
+      btn.textContent = 'Add job';
+      if (res.ok) {
+        document.getElementById('addJob').style.display = 'none';
+        toast(res.jobId + ' added. Find them in the New lane.');
+        load();
+      } else {
+        toast('Check the details and try again.');
+      }
+    }).catch(function () {
+      btn.disabled = false;
+      btn.textContent = 'Add job';
+      toast('No connection, nothing added.');
+    });
+  };
+
+  // ── Line-item editor for quotes and invoices ───────────────────────────────
+  var le = { job: null, el: null, mode: 'quote', lines: [], fee: 0 };
+
+  function openLineEditor(job, cardEl, mode) {
+    le.job = job; le.el = cardEl; le.mode = mode;
+    le.fee = feeFor(job);
+    var titles = { quote: 'Quote', amend: 'Amend quote', invoice: 'Invoice' };
+    document.getElementById('leTitle').textContent = titles[mode] + ': ' + job.name;
+    document.getElementById('leSave').textContent =
+      mode === 'invoice' ? 'Save invoice' : mode === 'amend' ? 'Save updated quote' : 'Save quote';
+    le.lines = (job.lineItems && job.lineItems.length)
+      ? job.lineItems.map(function (l) { return { t: String(l.t || ''), a: (l.a != null ? Number(l.a) : null) }; })
+      : [{ t: job.workDesc || 'Electrical work', a: null }];
+    var total = mode === 'invoice' ? (job.invoiced || job.quoted || 0) : (job.quoted || 0);
+    document.getElementById('leWork').value = total ? Math.max(0, total - le.fee) : '';
+    renderLines();
+    document.getElementById('lineEd').style.display = 'block';
+    document.getElementById('lineEd').scrollTop = 0;
+  }
+
+  function renderLines() {
+    var box = document.getElementById('leRows');
+    box.innerHTML = '';
+    le.lines.forEach(function (l, i) {
+      var row = document.createElement('div');
+      row.className = 'le-row';
+      var t = document.createElement('input');
+      t.className = 'le-t'; t.type = 'text'; t.maxLength = 120;
+      t.placeholder = 'e.g. 2 x power points'; t.value = l.t;
+      t.oninput = function () { l.t = t.value; };
+      var a = document.createElement('input');
+      a.className = 'le-a'; a.type = 'number'; a.min = '0';
+      a.placeholder = '$ optional'; a.value = l.a != null ? l.a : '';
+      a.oninput = function () { l.a = a.value === '' ? null : Number(a.value); recomputeLines(); };
+      var x = document.createElement('button');
+      x.type = 'button'; x.textContent = '×';
+      x.onclick = function () { if (le.lines.length > 1) { le.lines.splice(i, 1); renderLines(); } };
+      row.appendChild(t); row.appendChild(a); row.appendChild(x);
+      box.appendChild(row);
+    });
+    recomputeLines();
+  }
+
+  function recomputeLines() {
+    var workInput = document.getElementById('leWork');
+    var allPriced = le.lines.length > 0 && le.lines.every(function (l) { return l.a != null && l.a > 0; });
+    if (allPriced) {
+      var sum = 0;
+      le.lines.forEach(function (l) { sum += l.a; });
+      workInput.value = Math.round(sum * 100) / 100;
+      workInput.readOnly = true;
+      workInput.style.background = '#f0f1f3';
+    } else {
+      workInput.readOnly = false;
+      workInput.style.background = '';
+    }
+    var work = Number(workInput.value) || 0;
+    document.getElementById('leTravelRow').style.display = le.fee > 0 ? 'flex' : 'none';
+    document.getElementById('leTravelLabel').textContent = 'Travel (' + (le.job && le.job.zone ? le.job.zone : 'zone fee') + ')';
+    document.getElementById('leTravelAmt').textContent = money(le.fee);
+    document.getElementById('leGrand').textContent = money(work + le.fee);
+  }
+
+  document.getElementById('leWork').oninput = recomputeLines;
+  document.getElementById('leAdd').onclick = function () { le.lines.push({ t: '', a: null }); renderLines(); };
+  document.getElementById('leClose').onclick = function () { document.getElementById('lineEd').style.display = 'none'; };
+  document.getElementById('leSave').onclick = function () {
+    var lines = le.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null }; })
+      .filter(function (l) { return l.t; });
+    if (!lines.length) { toast('Add at least one line.'); return; }
+    var work = Number(document.getElementById('leWork').value) || 0;
+    if (!(work > 0)) { toast('Enter the job amount, or price the lines.'); return; }
+    var total = work + le.fee;
+    var set = {
+      lines: lines,
+      workDesc: lines.map(function (l) { return l.t; }).join('; ').slice(0, 300)
+    };
+    var busy;
+    if (le.mode === 'quote') { set.quoted = total; set.status = 'Quoted'; busy = 'Building the quote PDF…'; }
+    else if (le.mode === 'amend') { set.quoted = total; set.amendQuote = true; busy = 'Rebuilding the quote and emailing the update…'; }
+    else { set.invoiced = total; set.status = 'Invoiced'; busy = 'Building the invoice PDF…'; }
+    document.getElementById('lineEd').style.display = 'none';
+    send(le.job, le.el, set, busy);
   };
 
   document.getElementById('refreshBtn').onclick = load;
