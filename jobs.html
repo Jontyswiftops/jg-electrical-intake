@@ -143,10 +143,11 @@
       <input class="sf-input" id="ajAddress" type="text" maxlength="120" placeholder="Address (optional)">
       <input class="sf-input" id="ajDesc" type="text" maxlength="300" placeholder="What's the work? (optional)">
       <div class="sf-tier" style="margin-top:12px;">
-        <button type="button" id="ajLater" class="on">Lead for later</button>
-        <button type="button" id="ajNow">Doing the job now</button>
+        <button type="button" id="ajLater" class="on">Needs a quote first</button>
+        <button type="button" id="ajNow">No quote, book it in</button>
       </div>
-      <div class="sf-sub" id="ajNowHint" style="display:none;">Goes straight into Booked for today. Tap Start job on the card to do the safety record, then Done and Invoice when you're finished.</div>
+      <div class="sf-sub" id="ajNowHint" style="display:none;">Skips the quote stage - goes straight into Booked for the day below. Tap Start job on the day to do the safety record, then Done and Invoice.</div>
+      <input class="sf-input" id="ajDate" type="date" style="display:none;">
       <button type="button" class="sf-go" id="ajSave">Add job</button>
     </div>
   </div>
@@ -864,12 +865,18 @@
     document.getElementById('ajLater').className = now ? '' : 'on';
     document.getElementById('ajNow').className = now ? 'on' : '';
     document.getElementById('ajNowHint').style.display = now ? 'block' : 'none';
-    document.getElementById('ajSave').textContent = now ? 'Add job, ready to start' : 'Add job';
+    var dateEl = document.getElementById('ajDate');
+    dateEl.style.display = now ? 'block' : 'none';
+    if (now && !dateEl.value) {
+      var t = new Date();
+      dateEl.value = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+    }
+    document.getElementById('ajSave').textContent = now ? 'Add job and book it in' : 'Add job';
   }
   document.getElementById('ajLater').onclick = function () { setAjMode(false); };
   document.getElementById('ajNow').onclick = function () { setAjMode(true); };
   document.getElementById('addJobBtn').onclick = function () {
-    ['ajName','ajPhone','ajEmail','ajSuburb','ajPostcode','ajAddress','ajDesc'].forEach(function (id) {
+    ['ajName','ajPhone','ajEmail','ajSuburb','ajPostcode','ajAddress','ajDesc','ajDate'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
     setAjMode(false);
@@ -894,15 +901,16 @@
       postcode: document.getElementById('ajPostcode').value.trim(),
       address: document.getElementById('ajAddress').value.trim(),
       desc: document.getElementById('ajDesc').value.trim(),
-      startNow: ajStartNow
+      startNow: ajStartNow,
+      bookDate: ajStartNow ? document.getElementById('ajDate').value : ''
     }).then(function (res) {
       btn.disabled = false;
-      btn.textContent = ajStartNow ? 'Add job, ready to start' : 'Add job';
+      btn.textContent = ajStartNow ? 'Add job and book it in' : 'Add job';
       if (res.ok) {
         document.getElementById('addJob').style.display = 'none';
         if (ajStartNow) {
           state.filter = 'Booked';
-          toast(res.jobId + ' is in Booked for today. Tap Start job when you pick up the tools.');
+          toast(res.jobId + ' booked in, no quote needed. Start job on the day does the safety record.');
         } else {
           toast(res.jobId + ' added. Find them in the New lane.');
         }
