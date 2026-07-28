@@ -82,6 +82,19 @@
   .le-row button { flex:0 0 auto; width:auto; margin:0; padding:0 10px; background:none; border:0; color:#9aa0a6; font-size:19px; cursor:pointer; }
   .le-total { display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:15px; }
   .le-total b { color:var(--navy); font-size:17px; }
+
+  /* job notes */
+  .note-badge { display:inline-block; font-size:12px; font-weight:700; padding:3px 9px; border-radius:20px; margin:6px 6px 0 0; }
+  .nb-amber { background:#fef3d9; color:#8a4b00; }
+  .nb-grey { background:#eef0f2; color:#5f6368; }
+  .nb-green { background:#d9ead3; color:#1e6b34; }
+  .note-lines { margin:8px 0 0; padding:0; list-style:none; font-size:14px; color:#3c4043; }
+  .note-lines li { display:flex; justify-content:space-between; gap:10px; padding:2px 0; }
+  .note-lines li span:last-child { color:var(--navy); font-weight:600; white-space:nowrap; }
+  .np-thumbs { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .np-thumb { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
+  .np-thumb img { width:100%; height:100%; object-fit:cover; }
+  .np-thumb button { position:absolute; top:2px; right:2px; width:22px; height:22px; border-radius:50%; border:0; background:rgba(32,33,36,.75); color:#fff; font-size:14px; line-height:1; cursor:pointer; padding:0; }
   .hdr-btns { display:flex; gap:8px; }
 </style>
 </head>
@@ -149,6 +162,37 @@
       <div class="sf-sub" id="ajNowHint" style="display:none;">Skips the quote stage - goes straight into Booked for the day below. Tap Start job on the day to do the safety record, then Done and Invoice.</div>
       <input class="sf-input" id="ajDate" type="date" style="display:none;">
       <button type="button" class="sf-go" id="ajSave">Add job</button>
+    </div>
+  </div>
+</div>
+
+<div id="noteEd" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;">
+  <div class="sf-wrap">
+    <div class="sf-head">
+      <h2 id="npTitle">New note</h2>
+      <button class="sf-close" id="npClose">Cancel</button>
+    </div>
+    <div class="sf-card">
+      <h3>The work</h3>
+      <div class="sf-sub">One line per item, like "2 x power points". Rough prices are optional - they carry over when this becomes a job.</div>
+      <div id="npRows"></div>
+      <button type="button" class="sf-close" id="npAdd" style="margin-top:10px;">+ Add line</button>
+      <textarea class="sf-input" id="npText" rows="3" maxlength="1000" placeholder="Anything else worth noting - access, old wiring, what they said..."></textarea>
+      <button type="button" class="sf-close" id="npPhotoBtn" style="margin-top:10px;">+ Add photo (up to 3)</button>
+      <input type="file" id="npPhotoFile" accept="image/*" multiple style="display:none;">
+      <div class="np-thumbs" id="npThumbs"></div>
+    </div>
+    <div class="sf-card">
+      <h3>Who's it for</h3>
+      <div class="sf-sub">All optional, but grab at least a phone number - no contact details means no way to get paid.</div>
+      <input class="sf-input" id="npName" type="text" maxlength="80" placeholder="Name">
+      <input class="sf-input" id="npPhone" type="tel" maxlength="20" placeholder="Mobile">
+      <input class="sf-input" id="npEmail" type="email" maxlength="120" placeholder="Email">
+      <div style="display:flex;gap:8px;">
+        <input class="sf-input" id="npSuburb" type="text" maxlength="50" placeholder="Suburb" style="flex:1;">
+        <input class="sf-input" id="npAddress" type="text" maxlength="120" placeholder="Address" style="flex:1.4;">
+      </div>
+      <button type="button" class="sf-go" id="npSave">Save note</button>
     </div>
   </div>
 </div>
@@ -251,7 +295,7 @@
     'Paid':['#efefef','#5f6368'], 'Lost':['#efefef','#9aa0a6'], 'Cancelled':['#efefef','#9aa0a6']
   };
 
-  var state = { jobs: [], filter: 'New', fees: null, sort: 'newest' };
+  var state = { jobs: [], notes: [], filter: 'New', fees: null, sort: 'newest' };
 
   var SORTS = [['newest','Newest'], ['urgent','Urgent first'], ['closest','Closest'], ['suburb','By suburb']];
   var URGENCY_RANK = { 'No power - urgent': 0, 'This week': 1, 'Next few weeks': 2, 'Just planning': 3 };
@@ -361,7 +405,9 @@
       pwPending = false;
       showApp();
       state.jobs = res.jobs;
+      state.notes = res.notes || [];
       state.fees = res.fees || null;
+      flushNoteQueue();
       var g = res.gst;
       var pct = Math.min(100, Math.round(g.rolling / g.threshold * 100));
       document.getElementById('gst').textContent =
@@ -389,9 +435,20 @@
       b.onclick = function () { state.filter = g; render(); };
       chips.appendChild(b);
     });
+    var nb = document.createElement('button');
+    var openNotes = allNotes().filter(function (n) { return n.status !== 'Converted'; }).length;
+    nb.innerHTML = 'Notes' + (openNotes ? ' <span class="n">' + openNotes + '</span>' : '');
+    if (state.filter === 'Notes') nb.className = 'on';
+    nb.onclick = function () { state.filter = 'Notes'; render(); };
+    chips.appendChild(nb);
 
     var sortEl = document.getElementById('sortChips');
     sortEl.innerHTML = '';
+    if (state.filter === 'Notes') {
+      sortEl.style.display = 'none';
+      renderNotes();
+      return;
+    }
     if (state.filter === 'Booked') {
       sortEl.style.display = 'none'; // fixed soonest-first order
     } else {
@@ -860,6 +917,7 @@
 
   // ── Add job (phone / word-of-mouth clients) ────────────────────────────────
   var ajStartNow = false;
+  var ajFromNote = null; // note being turned into a job, if any
   function setAjMode(now) {
     ajStartNow = now;
     document.getElementById('ajLater').className = now ? '' : 'on';
@@ -876,6 +934,7 @@
   document.getElementById('ajLater').onclick = function () { setAjMode(false); };
   document.getElementById('ajNow').onclick = function () { setAjMode(true); };
   document.getElementById('addJobBtn').onclick = function () {
+    ajFromNote = null;
     ['ajName','ajPhone','ajEmail','ajSuburb','ajPostcode','ajAddress','ajDesc','ajDate'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
@@ -902,18 +961,29 @@
       address: document.getElementById('ajAddress').value.trim(),
       desc: document.getElementById('ajDesc').value.trim(),
       startNow: ajStartNow,
-      bookDate: ajStartNow ? document.getElementById('ajDate').value : ''
+      bookDate: ajStartNow ? document.getElementById('ajDate').value : '',
+      fromNote: ajFromNote ? ajFromNote.id : '',
+      lines: (ajFromNote && ajFromNote.lines && ajFromNote.lines.length) ? ajFromNote.lines : undefined,
+      noteText: ajFromNote ? (ajFromNote.note || '') : ''
     }).then(function (res) {
       btn.disabled = false;
       btn.textContent = ajStartNow ? 'Add job and book it in' : 'Add job';
       if (res.ok) {
         document.getElementById('addJob').style.display = 'none';
+        var msg;
         if (ajStartNow) {
           state.filter = 'Booked';
-          toast(res.jobId + ' booked in, no quote needed. Start job on the day does the safety record.');
+          msg = res.jobId + ' booked in, no quote needed. Start job on the day does the safety record.';
         } else {
-          toast(res.jobId + ' added. Find them in the New lane.');
+          msg = res.jobId + ' added. Find them in the New lane.';
         }
+        if (ajFromNote) {
+          msg = ajStartNow
+            ? res.jobId + ' booked in from your note. The work lines are already on it.'
+            : res.jobId + ' created from your note. The work lines are already on it - find them in the New lane.';
+          ajFromNote = null;
+        }
+        toast(msg);
         load();
       } else {
         toast('Check the details and try again.');
@@ -923,6 +993,340 @@
       btn.textContent = 'Add job';
       toast('No connection, nothing added.');
     });
+  };
+
+  // ── Job Notes: on-site notepad, offline-first ──────────────────────────────
+  // New notes save to the phone (localStorage queue) instantly and sync to the
+  // sheet when there's signal - a notepad that needs bars is worse than paper.
+  var NQ_KEY = 'jb_note_q';
+  function noteQueue() {
+    try { return JSON.parse(localStorage.getItem(NQ_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveNoteQueue(q) { localStorage.setItem(NQ_KEY, JSON.stringify(q)); }
+  function allNotes() {
+    var pending = noteQueue().map(function (n) {
+      var c = JSON.parse(JSON.stringify(n));
+      c.pending = true; c.status = 'Open';
+      return c;
+    });
+    return pending.concat(state.notes);
+  }
+
+  var nqFlushing = false;
+  function flushNoteQueue() {
+    if (nqFlushing) return;
+    var q = noteQueue();
+    if (!q.length) return;
+    nqFlushing = true;
+    var item = q[0];
+    api({
+      action: 'addNote', name: item.name, phone: item.phone, email: item.email,
+      suburb: item.suburb, address: item.address, lines: item.lines,
+      note: item.note, photos: item.photos || []
+    }).then(function (res) {
+      nqFlushing = false;
+      if (!res.ok) return; // bad payload: leave it on the phone rather than lose it
+      var rest = noteQueue().filter(function (x) { return x.id !== item.id; });
+      saveNoteQueue(rest);
+      if (rest.length) flushNoteQueue();
+      else load(); // queue drained: pull the server's copies with their NT numbers
+    }).catch(function () { nqFlushing = false; }); // still offline, try again later
+  }
+  window.addEventListener('online', flushNoteQueue);
+
+  function renderNotes() {
+    var list = document.getElementById('list');
+    list.innerHTML = '';
+    var add = document.createElement('button');
+    add.className = 'sf-go';
+    add.textContent = '+ New note';
+    add.style.marginTop = '0';
+    add.onclick = function () { openNoteEditor(null); };
+    list.appendChild(add);
+    var notes = allNotes();
+    if (!notes.length) {
+      list.insertAdjacentHTML('beforeend',
+        '<div class="empty">Nothing noted down. Tap + New note when you\'re standing in front of the work.</div>');
+      return;
+    }
+    notes.forEach(function (n) { list.appendChild(noteCard(n)); });
+  }
+
+  function noteCard(n) {
+    var el = document.createElement('div');
+    el.className = 'card';
+    var conv = n.status === 'Converted';
+    var noContact = !n.phone && !n.email;
+    if (noContact && !conv) el.style.borderLeft = '4px solid #f4b400';
+    var html = '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">' +
+      '<b style="font-size:16px;">' + esc(n.name || 'No name yet') + '</b>' +
+      '<span style="font-size:12.5px;color:#5f6368;white-space:nowrap;">' + esc(n.created || 'today') + '</span></div>';
+    var badges = '';
+    if (n.pending) badges += '<span class="note-badge nb-grey">On your phone - syncs with signal</span>';
+    if (conv) badges += '<span class="note-badge nb-green">Now job ' + esc(n.jobId) + '</span>';
+    else if (noContact) badges += '<span class="note-badge nb-amber">No contact details yet</span>';
+    if (badges) html += '<div>' + badges + '</div>';
+    if (n.lines && n.lines.length) {
+      html += '<ul class="note-lines">' + n.lines.map(function (l) {
+        return '<li><span>' + esc(l.t) + '</span>' + (l.a != null ? '<span>' + money(l.a) + '</span>' : '') + '</li>';
+      }).join('') + '</ul>';
+    }
+    if (n.note) html += '<div style="font-size:13.5px;color:#5f6368;margin-top:6px;">' + esc(n.note) + '</div>';
+    var meta = [];
+    if (n.address || n.suburb) meta.push(esc(n.address ? n.address + (n.suburb ? ', ' + n.suburb : '') : n.suburb));
+    if (n.phone) meta.push('<a href="tel:' + esc(String(n.phone).replace(/\s/g, '')) + '">' + esc(n.phone) + '</a>');
+    if (n.email) meta.push(esc(n.email));
+    if (meta.length) html += '<div style="font-size:13.5px;margin-top:6px;">' + meta.join(' · ') + '</div>';
+    if (n.photos && n.photos.length) {
+      html += '<div style="font-size:13.5px;margin-top:6px;">' + (n.pending
+        ? n.photos.length + ' photo' + (n.photos.length === 1 ? '' : 's') + ' attached'
+        : n.photos.map(function (u, i) {
+            return '<a href="' + esc(u) + '" target="_blank" rel="noopener">Photo ' + (i + 1) + '</a>';
+          }).join(' · ')) + '</div>';
+    }
+    el.innerHTML = html;
+    if (!conv) {
+      var row = document.createElement('div');
+      row.className = 'row';
+      if (!n.pending) {
+        var go = document.createElement('button');
+        go.className = 'primary';
+        go.textContent = 'Turn into job';
+        go.onclick = function () { noteToJob(n); };
+        row.appendChild(go);
+      }
+      var ed = document.createElement('button');
+      ed.className = 'secondary';
+      ed.textContent = 'Edit';
+      ed.onclick = function () { openNoteEditor(n); };
+      row.appendChild(ed);
+      var del = document.createElement('button');
+      del.className = 'secondary';
+      del.textContent = 'Delete';
+      del.onclick = function () {
+        if (!del.dataset.arm) {
+          del.dataset.arm = '1';
+          del.textContent = 'Tap again to delete';
+          setTimeout(function () { del.dataset.arm = ''; del.textContent = 'Delete'; }, 2500);
+          return;
+        }
+        if (n.pending) {
+          saveNoteQueue(noteQueue().filter(function (x) { return x.id !== n.id; }));
+          render();
+          toast('Note deleted.');
+          return;
+        }
+        del.disabled = true;
+        api({ action: 'deleteNote', noteId: n.id }).then(function (res) {
+          if (res.ok) {
+            state.notes = state.notes.filter(function (x) { return x.id !== n.id; });
+            render();
+            toast('Note deleted.');
+          } else {
+            del.disabled = false;
+            toast('Couldn\'t delete — try again.');
+          }
+        }).catch(function () {
+          del.disabled = false;
+          toast('No connection — try again with signal.');
+        });
+      };
+      row.appendChild(del);
+      el.appendChild(row);
+    }
+    return el;
+  }
+
+  // Prefill the Add job form from a note; the save carries lines + photos over.
+  function noteToJob(n) {
+    ajFromNote = n;
+    document.getElementById('ajName').value = n.name || '';
+    document.getElementById('ajPhone').value = n.phone || '';
+    document.getElementById('ajEmail').value = n.email || '';
+    document.getElementById('ajSuburb').value = n.suburb || '';
+    document.getElementById('ajPostcode').value = '';
+    document.getElementById('ajAddress').value = n.address || '';
+    document.getElementById('ajDesc').value = (n.lines && n.lines.length)
+      ? n.lines.map(function (l) { return l.t; }).join('; ').slice(0, 300)
+      : (n.note || '').slice(0, 300);
+    document.getElementById('ajDate').value = '';
+    setAjMode(false);
+    document.getElementById('addJob').style.display = 'block';
+    document.getElementById('addJob').scrollTop = 0;
+  }
+
+  // ── Note editor ────────────────────────────────────────────────────────────
+  var np = { editing: null, lines: [], photos: [], syncedCount: 0 };
+
+  function openNoteEditor(note) {
+    np.editing = note || null;
+    np.lines = (note && note.lines && note.lines.length)
+      ? note.lines.map(function (l) { return { t: String(l.t || ''), a: (l.a != null ? Number(l.a) : null) }; })
+      : [{ t: '', a: null }];
+    np.photos = (note && note.pending && note.photos) ? note.photos.slice() : [];
+    np.syncedCount = (note && !note.pending && note.photos) ? note.photos.length : 0;
+    document.getElementById('npTitle').textContent = note ? 'Edit note' : 'New note';
+    document.getElementById('npName').value = note ? (note.name || '') : '';
+    document.getElementById('npPhone').value = note ? (note.phone || '') : '';
+    document.getElementById('npEmail').value = note ? (note.email || '') : '';
+    document.getElementById('npSuburb').value = note ? (note.suburb || '') : '';
+    document.getElementById('npAddress').value = note ? (note.address || '') : '';
+    document.getElementById('npText').value = note ? (note.note || '') : '';
+    renderNpLines();
+    renderNpThumbs();
+    document.getElementById('noteEd').style.display = 'block';
+    document.getElementById('noteEd').scrollTop = 0;
+  }
+
+  function renderNpLines() {
+    var box = document.getElementById('npRows');
+    box.innerHTML = '';
+    np.lines.forEach(function (l, i) {
+      var row = document.createElement('div');
+      row.className = 'le-row';
+      var t = document.createElement('input');
+      t.className = 'le-t'; t.type = 'text'; t.maxLength = 120;
+      t.placeholder = 'e.g. 2 x power points'; t.value = l.t;
+      t.oninput = function () { l.t = t.value; };
+      var a = document.createElement('input');
+      a.className = 'le-a'; a.type = 'number'; a.min = '0';
+      a.placeholder = '$ rough'; a.value = l.a != null ? l.a : '';
+      a.oninput = function () { l.a = a.value === '' ? null : Number(a.value); };
+      var x = document.createElement('button');
+      x.type = 'button'; x.textContent = '×';
+      x.onclick = function () { if (np.lines.length > 1) { np.lines.splice(i, 1); renderNpLines(); } };
+      row.appendChild(t); row.appendChild(a); row.appendChild(x);
+      box.appendChild(row);
+    });
+  }
+
+  function npPhotoCount() { return np.photos.length + np.syncedCount; }
+
+  /** Downscale to 1280px JPEG so 3 photos still fit in localStorage offline. */
+  function shrinkPhoto(file) {
+    return new Promise(function (resolve) {
+      var fr = new FileReader();
+      fr.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var s = Math.min(1, 1280 / Math.max(img.width, img.height));
+          var c = document.createElement('canvas');
+          c.width = Math.round(img.width * s);
+          c.height = Math.round(img.height * s);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          resolve(c.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = function () { resolve(null); };
+        img.src = fr.result;
+      };
+      fr.onerror = function () { resolve(null); };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function renderNpThumbs() {
+    var box = document.getElementById('npThumbs');
+    box.innerHTML = '';
+    if (np.syncedCount) {
+      var s = document.createElement('div');
+      s.className = 'sf-sub';
+      s.style.width = '100%';
+      s.textContent = np.syncedCount + ' photo' + (np.syncedCount === 1 ? '' : 's') + ' already saved with this note.';
+      box.appendChild(s);
+    }
+    np.photos.forEach(function (d, i) {
+      var t = document.createElement('div');
+      t.className = 'np-thumb';
+      var img = document.createElement('img');
+      img.src = d;
+      var x = document.createElement('button');
+      x.type = 'button'; x.textContent = '×';
+      x.onclick = function () { np.photos.splice(i, 1); renderNpThumbs(); };
+      t.appendChild(img); t.appendChild(x);
+      box.appendChild(t);
+    });
+    document.getElementById('npPhotoBtn').style.display = npPhotoCount() >= 3 ? 'none' : 'block';
+  }
+
+  document.getElementById('npPhotoBtn').onclick = function () { document.getElementById('npPhotoFile').click(); };
+  document.getElementById('npPhotoFile').onchange = function () {
+    var files = [].slice.call(this.files || []).slice(0, 3 - npPhotoCount());
+    this.value = '';
+    files.forEach(function (f) {
+      shrinkPhoto(f).then(function (d) {
+        if (d && npPhotoCount() < 3) { np.photos.push(d); renderNpThumbs(); }
+      });
+    });
+  };
+  document.getElementById('npAdd').onclick = function () { np.lines.push({ t: '', a: null }); renderNpLines(); };
+  document.getElementById('npClose').onclick = function () { document.getElementById('noteEd').style.display = 'none'; };
+
+  document.getElementById('npSave').onclick = function () {
+    var lines = np.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null }; })
+      .filter(function (l) { return l.t; });
+    var obj = {
+      name: document.getElementById('npName').value.trim(),
+      phone: document.getElementById('npPhone').value.trim(),
+      email: document.getElementById('npEmail').value.trim(),
+      suburb: document.getElementById('npSuburb').value.trim(),
+      address: document.getElementById('npAddress').value.trim(),
+      note: document.getElementById('npText').value.trim(),
+      lines: lines,
+      photos: np.photos
+    };
+    if (!obj.name && !lines.length && !obj.note) { toast('Note something down first.'); return; }
+    var btn = document.getElementById('npSave');
+
+    if (np.editing && !np.editing.pending) {
+      // Already on the sheet: edits go straight to the server.
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      api({
+        action: 'updateNote', noteId: np.editing.id, name: obj.name, phone: obj.phone,
+        email: obj.email, suburb: obj.suburb, address: obj.address, note: obj.note,
+        lines: obj.lines, photos: obj.photos
+      }).then(function (res) {
+        btn.disabled = false;
+        btn.textContent = 'Save note';
+        if (res.ok) {
+          document.getElementById('noteEd').style.display = 'none';
+          toast('Note updated.');
+          load();
+        } else {
+          toast('Couldn\'t save — try again.');
+        }
+      }).catch(function () {
+        btn.disabled = false;
+        btn.textContent = 'Save note';
+        toast('No connection — try again with signal.');
+      });
+      return;
+    }
+
+    var q = noteQueue();
+    if (np.editing && np.editing.pending) {
+      for (var i = 0; i < q.length; i++) {
+        if (q[i].id === np.editing.id) { obj.id = q[i].id; q[i] = obj; break; }
+      }
+    } else {
+      obj.id = 'local-' + Date.now();
+      q.push(obj);
+    }
+    try {
+      saveNoteQueue(q);
+    } catch (e) {
+      // localStorage full (photos): keep the words, drop the images.
+      obj.photos = [];
+      try { saveNoteQueue(q); toast('Photos were too big to keep offline — note saved without them.'); }
+      catch (e2) { toast('Phone storage is full — couldn\'t save.'); return; }
+    }
+    document.getElementById('noteEd').style.display = 'none';
+    state.filter = 'Notes';
+    render();
+    toast(navigator.onLine === false
+      ? 'Note saved on your phone. It\'ll sync to the sheet when you\'ve got signal.'
+      : 'Note saved.');
+    flushNoteQueue();
   };
 
   // ── Line-item editor for quotes and invoices ───────────────────────────────
