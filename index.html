@@ -5,308 +5,315 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="robots" content="noindex, nofollow">
-<title>Gattera Electrical Services</title>
+<title>Gattera Electrical Services | Electrician Landsborough &amp; South East Queensland</title>
+<meta name="description" content="Licensed local electrician in Landsborough QLD servicing South East Queensland. Power points, lighting, switchboards, safety switches, fans and smoke alarms. Get a quote online with photos and hear back within 24-48 hours.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Electrician",
+  "name": "Gattera Electrical Services",
+  "telephone": "+61438987871",
+  "url": "https://gatteraelectrical.com.au/",
+  "areaServed": ["Landsborough", "Beerwah", "Glass House Mountains", "Maleny", "Montville", "Mooloolah Valley", "Palmwoods", "Caloundra", "Nambour", "Woombye", "Brisbane", "Ipswich", "Gold Coast"],
+  "priceRange": "$$"
+}
+</script>
 <style>
   :root {
     --navy: #14213d;
+    --navy-2: #1d2d52;
     --amber: #fca311;
     --bg: #f6f7f9;
     --border: #d7dbe0;
-    --err: #c5221f;
+    --grey: #5f6368;
+    --green: #188038;
   }
   * { box-sizing: border-box; margin: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    background: var(--bg); color: #1c1e21;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 480px; margin: 0 auto; padding: 20px 16px 48px; }
-  header { text-align: center; padding: 20px 0 8px; }
-  h1 { font-size: 24px; color: var(--navy); margin: 6px 0 4px; }
-  .sub { color: #5f6368; font-size: 15px; margin-bottom: 20px; text-align: center; }
-  form { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 20px 18px; }
-  label { display: block; font-weight: 600; font-size: 14px; margin: 16px 0 6px; color: var(--navy); }
-  label:first-of-type { margin-top: 0; }
-  .req::after { content: " *"; color: var(--err); }
-  input, select, textarea {
-    width: 100%; font-size: 16px; /* ≥16px stops iOS zoom */
-    padding: 12px; border: 1px solid var(--border); border-radius: 8px;
-    background: #fff; color: inherit; font-family: inherit;
-  }
-  input:focus, select:focus, textarea:focus {
-    outline: 2px solid var(--amber); outline-offset: 0; border-color: var(--amber);
-  }
-  textarea { min-height: 110px; resize: vertical; }
-  .hint { font-size: 13px; color: #5f6368; margin-top: 4px; }
-  .field-err { font-size: 13px; color: var(--err); margin-top: 4px; display: none; }
-  .invalid input, .invalid textarea { border-color: var(--err); }
-  .invalid .field-err { display: block; }
-  button {
-    width: 100%; margin-top: 22px; padding: 15px; font-size: 17px; font-weight: 700;
-    color: var(--navy); background: var(--amber); border: 0; border-radius: 8px; cursor: pointer;
-  }
-  button:disabled { opacity: .6; }
-  .photo-btn {
-    display: block; width: 100%; margin-top: 6px; padding: 14px; text-align: center;
-    border: 2px dashed var(--border); border-radius: 8px; color: #5f6368; font-size: 15px; cursor: pointer;
-  }
-  #photoInput { display: none; }
-  .chip {
-    display: inline-flex; align-items: center; gap: 6px; margin: 8px 8px 0 0;
-    padding: 6px 10px; background: #eef3fb; border-radius: 16px; font-size: 14px; color: var(--navy);
-  }
-  .chip button {
-    width: auto; margin: 0; padding: 0 4px; font-size: 15px; line-height: 1;
-    background: none; border: 0; color: #5f6368; cursor: pointer;
-  }
-  /* Honeypot: visually gone, still in the DOM for bots */
-  .hp { position: absolute; left: -9999px; top: -9999px; height: 0; overflow: hidden; }
-  #done, #fail { display: none; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 28px 20px; text-align: center; }
-  #done h2 { color: #188038; margin-bottom: 10px; }
-  #fail h2 { color: var(--err); margin-bottom: 10px; }
-  .phone-fallback { font-size: 18px; font-weight: 700; color: var(--navy); text-decoration: none; }
-  footer { text-align: center; color: #9aa0a6; font-size: 12px; margin-top: 24px; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1c1e21; background: #fff; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 0 20px; }
+  h2 { font-size: 26px; color: var(--navy); margin-bottom: 8px; }
+  .kicker { font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: var(--amber); text-transform: uppercase; margin-bottom: 6px; }
+  .lead { color: var(--grey); font-size: 16px; max-width: 640px; }
+  section { padding: 56px 0; }
+
+  /* header */
+  .top { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid var(--border); }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; padding-bottom: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; color: var(--navy); letter-spacing: .3px; text-decoration: none; }
+  .brand img { height: 42px; width: 42px; }
+  .brand span { color: var(--amber); }
+  .call-btn { background: var(--navy); color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 15px; white-space: nowrap; }
+
+  /* hero */
+  .hero { background: linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 100%); color: #fff; padding: 72px 0 64px; }
+  .hero h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.15; max-width: 640px; }
+  .hero h1 em { color: var(--amber); font-style: normal; }
+  .hero p { margin: 18px 0 28px; font-size: 17px; color: #c9d0dd; max-width: 560px; }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-amber { background: var(--amber); color: var(--navy); padding: 15px 28px; border-radius: 8px; font-weight: 800; font-size: 16px; text-decoration: none; }
+  .btn-ghost { border: 2px solid rgba(255,255,255,.4); color: #fff; padding: 13px 26px; border-radius: 8px; font-weight: 700; font-size: 16px; text-decoration: none; }
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 30px; }
+  .chip { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); padding: 8px 14px; border-radius: 20px; font-size: 13.5px; color: #e6e9f0; }
+  .chip svg { flex: 0 0 auto; }
+
+  /* services */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; margin-top: 26px; }
+  .card { border: 1px solid var(--border); border-radius: 12px; padding: 20px 18px; background: #fff; }
+  .card svg { margin-bottom: 10px; }
+  .card h3 { font-size: 16px; color: var(--navy); margin-bottom: 5px; }
+  .card p { font-size: 13.5px; color: var(--grey); line-height: 1.5; }
+
+  /* how it works */
+  .steps-bg { background: var(--bg); }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 26px; }
+  .step { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 22px 20px; }
+  .step .num { width: 34px; height: 34px; border-radius: 50%; background: var(--amber); color: var(--navy); font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+  .step h3 { font-size: 16.5px; color: var(--navy); margin-bottom: 6px; }
+  .step p { font-size: 14px; color: var(--grey); line-height: 1.55; }
+
+  /* areas + about */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: start; }
+  @media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+  .suburbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .suburb { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 6px 13px; font-size: 13.5px; color: var(--navy); }
+  .suburb.base { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .about-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px 22px; }
+  .about-card p { font-size: 15px; line-height: 1.65; color: #333; }
+  .about-card p + p { margin-top: 12px; }
+
+  /* faq */
+  details { border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin-top: 10px; }
+  summary { font-weight: 700; color: var(--navy); cursor: pointer; font-size: 15px; }
+  details p { margin-top: 10px; font-size: 14.5px; color: var(--grey); line-height: 1.6; }
+
+  /* reviews: hidden until the Google profile is live; remove style="display:none" and drop the review link in */
+  #reviews { display: none; }
+
+  /* cta band */
+  .band { background: var(--navy); color: #fff; text-align: center; padding: 56px 20px; }
+  .band h2 { color: #fff; font-size: 28px; }
+  .band p { color: #c9d0dd; margin: 10px 0 24px; }
+
+  footer { background: #0e1830; color: #8f9bb3; font-size: 13px; padding: 30px 0 90px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer b { color: #fff; }
+
+  /* sticky mobile action bar */
+  .mobile-bar { position: fixed; bottom: 0; left: 0; right: 0; display: none; gap: 1px; z-index: 20; }
+  .mobile-bar a { flex: 1; text-align: center; padding: 16px; font-weight: 800; font-size: 15.5px; text-decoration: none; }
+  .mobile-bar .m-call { background: var(--navy); color: #fff; }
+  .mobile-bar .m-quote { background: var(--amber); color: var(--navy); }
+  @media (max-width: 700px) { .mobile-bar { display: flex; } .top .call-btn { display: none; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <img src="gattera-icon.png" alt="" style="height:58px;width:58px;">
-    <h1>Gattera Electrical Services</h1>
-  </header>
-  <p class="sub">Tell me about the job and I'll call you back within 24-48 hours.</p>
 
-  <form id="f" novalidate>
-    <label class="req" for="name">Your name</label>
-    <div class="fw"><input id="name" name="name" type="text" autocomplete="name" maxlength="80" required>
-    <div class="field-err">Please enter your name.</div></div>
-
-    <label class="req" for="phone">Mobile number</label>
-    <div class="fw"><input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" required>
-    <div class="field-err">Please enter a valid Australian phone number.</div></div>
-
-    <label class="req" for="email">Email</label>
-    <div class="fw"><input id="email" name="email" type="email" autocomplete="email" maxlength="120" required>
-    <div class="hint">Your confirmation and quote get emailed here.</div>
-    <div class="field-err">Please enter a valid email address.</div></div>
-
-    <label class="req" for="suburb">Suburb</label>
-    <div class="fw"><input id="suburb" name="suburb" type="text" autocomplete="address-level2" maxlength="50" required>
-    <div class="field-err">Please enter your suburb.</div></div>
-
-    <label class="req" for="postcode">Postcode</label>
-    <div class="fw"><input id="postcode" name="postcode" type="text" autocomplete="postal-code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required>
-    <div class="hint">Postcode of the place where the work needs doing.</div>
-    <div class="field-err">Please enter your 4-digit postcode.</div></div>
-
-    <label class="req" for="propertyType">Property type</label>
-    <select id="propertyType" name="propertyType" required>
-      <option>House</option>
-      <option>Unit or Townhouse</option>
-      <option>Rural</option>
-      <option>Commercial</option>
-      <option>Other</option>
-    </select>
-
-    <label class="req" for="description">What needs doing?</label>
-    <div class="fw"><textarea id="description" name="description" maxlength="1000" required
-      placeholder="e.g. Two new power points in the garage, and the safety switch keeps tripping"></textarea>
-    <div class="field-err">Give me a bit more detail (at least 10 characters).</div></div>
-
-    <label class="req" for="urgency">How urgent?</label>
-    <select id="urgency" name="urgency" required>
-      <option>No power - urgent</option>
-      <option selected>This week</option>
-      <option>Next few weeks</option>
-      <option>Just planning</option>
-    </select>
-
-    <label class="req" for="contactTime">Best time to call</label>
-    <select id="contactTime" name="contactTime" required>
-      <option selected>Anytime</option>
-      <option>Weekday daytime</option>
-      <option>Weekday evening</option>
-      <option>Weekend</option>
-    </select>
-
-    <label for="photoInput">Photos of the job <span style="font-weight:400;color:#5f6368;">(optional, up to 3)</span></label>
-    <label class="photo-btn" id="photoBtn" for="photoInput">📷 Add photos to help Jarid quote faster</label>
-    <input id="photoInput" type="file" accept="image/*" multiple>
-    <div id="photoChips"></div>
-
-    <!-- honeypot: humans never see or fill this -->
-    <div class="hp" aria-hidden="true">
-      <label for="company">Company</label>
-      <input id="company" name="company" type="text" tabindex="-1" autocomplete="off">
-    </div>
-
-    <button id="go" type="submit">Send it through</button>
-    <div class="hint" style="text-align:center;margin-top:10px;">Sending can take a few seconds, especially with photos. Please keep this page open until you see the confirmation.<br>Your confirmation email arrives straight away. If it's not in your inbox, please check your junk or spam folder and mark it as not spam so our quote reaches you.</div>
-  </form>
-
-  <div id="done">
-    <h2>Thanks<span id="doneName"></span>!</h2>
-    <p>Jarid's got your enquiry and will call you within 24-48 hours.</p>
-    <p class="hint" style="margin-top:12px;">A confirmation email is on its way. If you can't see it, have a quick look in your junk or spam folder and mark it as not spam, so your quote lands in your inbox.</p>
-    <p class="hint" style="margin-top:12px;">Forgot to add photos? No stress, text them to <a class="phone-fallback" href="sms:+61438987871">0438 987 871</a></p>
+<div class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="gattera-icon.png" alt=""><span style="color:var(--navy);">GATTERA ELECTRICAL <span>SERVICES</span></span></a>
+    <a class="call-btn" href="tel:+61438987871">Call 0438 987 871</a>
   </div>
-
-  <div id="fail">
-    <h2>Hmm, that didn't go through</h2>
-    <p>No worries, just call or text Jarid directly:</p>
-    <p style="margin-top:12px;"><a class="phone-fallback" href="tel:+61438987871">0438 987 871</a></p>
-  </div>
-
-  <footer>Gattera Electrical Services · Jarid Gattera · ABN 99 771 348 986</footer>
 </div>
 
-<script>
-  // ── Deploy config: paste from the Job Book's Settings tab ──────────────────
-  var ENDPOINT = 'https://script.google.com/macros/s/AKfycbyUfaLwPTEquV_q-5IiJJF6NDc6VXuaZPeQxOj6eVM_4uhnIjb-TsRjJCoAUJlCW9HDNw/exec';
-  var TOKEN = '2c056e85dab144858fd7b57e2ad87f8d';       // Settings → FormToken
-  // ───────────────────────────────────────────────────────────────────────────
+<div class="hero">
+  <div class="wrap">
+    <h1>Your local electrician for <em>South East Queensland</em></h1>
+    <p>Power points, lighting, switchboards, safety switches and more. Done properly, priced upfront and booked in without the phone tag.</p>
+    <div class="cta-row">
+      <a class="btn-amber" href="https://gatteraelectrical.com.au/quote.html">Get a quote online</a>
+      <a class="btn-ghost" href="tel:+61438987871">Call 0438 987 871</a>
+    </div>
+    <div class="chips">
+      <div class="chip">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fca311" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+        Licensed electrician
+      </div>
+      <div class="chip">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fca311" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+        $10M public liability insurance
+      </div>
+      <div class="chip">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fca311" stroke-width="2"><path d="M12 21s-7-4.6-7-10a7 7 0 0 1 14 0c0 5.4-7 10-7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
+        Family-run, hinterland local
+      </div>
+    </div>
+  </div>
+</div>
 
-  var t0 = Date.now(); // page-load stamp; server rejects <3s submits (bot signal)
+<section id="services">
+  <div class="wrap">
+    <div class="kicker">What we do</div>
+    <h2>Everyday electrical, done right</h2>
+    <p class="lead">Homes, units, rural properties and small business. No job is too small to do properly.</p>
+    <div class="grid">
+      <div class="card">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14213d" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9.5" cy="12" r="1.3" fill="#14213d"/><circle cx="14.5" cy="12" r="1.3" fill="#14213d"/></svg>
+        <h3>Power points &amp; USB outlets</h3>
+        <p>Extra outlets where you actually need them, tired ones replaced.</p>
+      </div>
+      <div class="card">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14213d" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.8.6 1.5 1.9 1.5 3.1h4c0-1.2.7-2.5 1.5-3.1A6 6 0 0 0 12 3z"/></svg>
+        <h3>Lighting &amp; ceiling fans</h3>
+        <p>LED upgrades, new fittings, outdoor and garden lighting, fan installs.</p>
+      </div>
+      <div class="card">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14213d" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>
+        <h3>Switchboard upgrades</h3>
+        <p>Old fuse boxes brought up to modern standards, safer for your family and your insurance.</p>
+      </div>
+      <div class="card">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14213d" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M12 8v5M12 16.5v.5" stroke-width="2.2"/></svg>
+        <h3>Safety switches</h3>
+        <p>Testing, repairs and new RCD protection for every circuit in the house.</p>
+      </div>
+      <div class="card">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14213d" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>
+        <h3>Smoke alarms</h3>
+        <p>Interconnected alarms to current QLD legislation, installed and tested.</p>
+      </div>
+      <div class="card">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14213d" stroke-width="1.8"><path d="M4 20h16M6 20V9l6-5 6 5v11"/><path d="M10 20v-5h4v5"/></svg>
+        <h3>Renovations &amp; new circuits</h3>
+        <p>Sheds, granny flats and kitchen renovations, wired from rough-in to fit-off.</p>
+      </div>
+      <div class="card">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14213d" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <h3>Data &amp; TV points</h3>
+        <p>Ethernet runs, extra antenna points, and Wi-Fi dead spots fixed properly.</p>
+      </div>
+      <div class="card">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#14213d" stroke-width="1.8"><path d="M13 2L4.5 13.5H11l-1 8.5L18.5 10H12l1-8z"/></svg>
+        <h3>Fault finding &amp; repairs</h3>
+        <p>Tripping breakers, dead circuits, flickering lights. Diagnosed and fixed.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  // ── Photos: up to 3, downscaled to ≤1600px JPEG so the payload stays small ──
-  var photos = []; // [{name, data}]
-  var MAX_PHOTOS = 3;
+<section class="steps-bg" id="how">
+  <div class="wrap">
+    <div class="kicker">No phone tag</div>
+    <h2>The easiest quote you'll ever get</h2>
+    <p class="lead">Most trades make you chase them. We work the other way around.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <h3>Tell us about the job online</h3>
+        <p>It takes two minutes on your phone. Add photos of the job and your postcode and it goes straight into our system.</p>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <h3>Quote lands in your inbox</h3>
+        <p>Jarid calls within 24-48 hours, then your written quote arrives by email with travel included. Happy with it? Accept it in one tap.</p>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <h3>Booked in, reminded, done</h3>
+        <p>You get a booking confirmation, a reminder the day before, and a receipt when it's paid. Tidy work and a tidy paper trail.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  function renderChips() {
-    var box = document.getElementById('photoChips');
-    box.innerHTML = '';
-    photos.forEach(function (p, i) {
-      var chip = document.createElement('span');
-      chip.className = 'chip';
-      chip.appendChild(document.createTextNode('📷 ' + p.name));
-      var x = document.createElement('button');
-      x.type = 'button';
-      x.textContent = '✕';
-      x.setAttribute('aria-label', 'Remove ' + p.name);
-      x.onclick = function () { photos.splice(i, 1); renderChips(); };
-      chip.appendChild(x);
-      box.appendChild(chip);
-    });
-    var btn = document.getElementById('photoBtn');
-    btn.textContent = photos.length >= MAX_PHOTOS ? '✓ 3 photos attached (max)'
-      : photos.length ? '📷 Add another photo (' + photos.length + '/' + MAX_PHOTOS + ')'
-      : '📷 Add photos to help Jarid quote faster';
-  }
+<section id="areas">
+  <div class="wrap split">
+    <div>
+      <div class="kicker">Where we work</div>
+      <h2>Landsborough &amp; South East Queensland</h2>
+      <p class="lead">Based in Landsborough and covering South East Queensland, from the hinterland to the coast. Travel is always shown upfront in your quote, never as a surprise on the invoice.</p>
+      <div class="suburbs">
+        <span class="suburb base">Landsborough (home base)</span>
+        <span class="suburb">Beerwah</span>
+        <span class="suburb">Glass House Mountains</span>
+        <span class="suburb">Mooloolah Valley</span>
+        <span class="suburb">Maleny</span>
+        <span class="suburb">Montville</span>
+        <span class="suburb">Palmwoods</span>
+        <span class="suburb">Woombye</span>
+        <span class="suburb">Caloundra</span>
+        <span class="suburb">Nambour</span>
+        <span class="suburb">Brisbane</span>
+        <span class="suburb">Ipswich</span>
+        <span class="suburb">Gold Coast</span>
+        <span class="suburb">+ surrounding areas</span>
+      </div>
+    </div>
+    <div>
+      <div class="kicker">Who you're dealing with</div>
+      <h2>Meet Jarid</h2>
+      <img src="gattera-badge.png" alt="Gattera Electrical Services badge" style="width:180px;max-width:55%;display:block;margin:18px auto 4px;">
+      <div class="about-card" style="margin-top:16px;">
+        <p>Gattera Electrical Services is run by Jarid Gattera, a licensed electrician who lives right here in Landsborough. When you book us, Jarid is who turns up: no subcontractors, no rotating faces, and the person who quoted your job is the one holding the screwdriver.</p>
+        <p>Family-run and fully insured with $10 million public liability cover, we keep it simple: honest advice, upfront pricing, clean work, and your paperwork handled properly. Quotes, invoices and receipts are all emailed, and nothing gets scribbled on the back of a card.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  function downscale(file, cb) {
-    var img = new Image();
-    var url = URL.createObjectURL(file);
-    img.onload = function () {
-      var scale = Math.min(1, 1600 / Math.max(img.width, img.height));
-      var canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      cb(canvas.toDataURL('image/jpeg', 0.8));
-    };
-    img.onerror = function () { URL.revokeObjectURL(url); cb(null); };
-    img.src = url;
-  }
+<!-- Enable this section once the Google Business Profile is live:
+     remove the #reviews display:none rule and add the review link. -->
+<section id="reviews">
+  <div class="wrap">
+    <div class="kicker">What clients say</div>
+    <h2>Reviews</h2>
+    <p class="lead">See what locals say about us on Google, or leave a review if we've done work for you.</p>
+    <p style="margin-top:18px;"><a class="btn-amber" href="GOOGLE_REVIEW_LINK">Read our Google reviews</a></p>
+  </div>
+</section>
 
-  document.getElementById('photoInput').addEventListener('change', function () {
-    var files = Array.prototype.slice.call(this.files || []);
-    this.value = ''; // allow re-picking the same file
-    files.forEach(function (file, idx) {
-      if (photos.length + idx >= MAX_PHOTOS) return;
-      downscale(file, function (data) {
-        if (data && photos.length < MAX_PHOTOS) {
-          photos.push({ name: 'Photo ' + (photos.length + 1), data: data });
-          photos.forEach(function (p, i) { p.name = 'Photo ' + (i + 1); });
-          renderChips();
-        }
-      });
-    });
-  });
+<section class="steps-bg" id="faq">
+  <div class="wrap">
+    <div class="kicker">Good to know</div>
+    <h2>Common questions</h2>
+    <details>
+      <summary>Do you charge a call-out fee?</summary>
+      <p>No. Travel is built into your quote as its own line, based on distance, so you see the full price before you say yes.</p>
+    </details>
+    <details>
+      <summary>How fast will I hear back?</summary>
+      <p>Within 24-48 hours of your enquiry, usually with a phone call first and your written quote emailed after. If you have no power at all, skip the form and call directly.</p>
+    </details>
+    <details>
+      <summary>Are you licensed and insured?</summary>
+      <p>Yes. Licensed for electrical work in Queensland and insured with $10 million public liability cover. Licence details appear on every quote and invoice.</p>
+    </details>
+    <details>
+      <summary>Do you do small jobs?</summary>
+      <p>Absolutely. A single power point or a flickering light gets the same treatment as a full renovation: a proper quote, a booked time and tidy work.</p>
+    </details>
+  </div>
+</section>
 
-  function wrapOf(el) { return el.closest('.fw'); }
-  function setInvalid(el, bad) {
-    var w = wrapOf(el);
-    if (w) w.classList.toggle('invalid', bad);
-    return !bad;
-  }
-  function validPhone(v) {
-    var d = v.replace(/[^0-9+]/g, '');
-    return /^(\+?61|0)[0-9]{8,10}$/.test(d);
-  }
+<div class="band">
+  <h2>Need an electrician?</h2>
+  <p>Two minutes online now beats a week of phone tag.</p>
+  <div class="cta-row" style="justify-content:center;">
+    <a class="btn-amber" href="https://gatteraelectrical.com.au/quote.html">Get a quote online</a>
+    <a class="btn-ghost" href="tel:+61438987871">Call 0438 987 871</a>
+  </div>
+</div>
 
-  document.getElementById('f').addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var name = document.getElementById('name');
-    var phone = document.getElementById('phone');
-    var email = document.getElementById('email');
-    var suburb = document.getElementById('suburb');
-    var postcode = document.getElementById('postcode');
-    var desc = document.getElementById('description');
+<footer>
+  <div class="wrap">
+    <div>
+      <b>Gattera Electrical Services</b><br>
+      Jarid Gattera · Landsborough QLD<br>
+      ABN 99 771 348 986<br>
+      Electrical Contractor Licence 1513930
+    </div>
+    <div style="text-align:right;">
+      <b>Get in touch</b><br>
+      <a href="tel:+61438987871" style="color:#c9d0dd;">0438 987 871</a><br>
+      <a href="https://gatteraelectrical.com.au/quote.html" style="color:#c9d0dd;">Request a quote online</a>
+    </div>
+  </div>
+</footer>
 
-    var ok = true;
-    ok = setInvalid(name, name.value.trim().length < 2) && ok;
-    ok = setInvalid(phone, !validPhone(phone.value)) && ok;
-    ok = setInvalid(email, !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) && ok;
-    ok = setInvalid(suburb, suburb.value.trim().length < 2) && ok;
-    ok = setInvalid(postcode, !/^[0-9]{4}$/.test(postcode.value.trim())) && ok;
-    ok = setInvalid(desc, desc.value.trim().length < 10) && ok;
-    if (!ok) {
-      document.querySelector('.invalid input, .invalid textarea').focus();
-      return;
-    }
+<div class="mobile-bar">
+  <a class="m-call" href="tel:+61438987871">Call Jarid</a>
+  <a class="m-quote" href="https://gatteraelectrical.com.au/quote.html">Get a quote</a>
+</div>
 
-    var btn = document.getElementById('go');
-    btn.disabled = true;
-    btn.textContent = 'Sending…';
-
-    var payload = JSON.stringify({
-      kind: 'enquiry',
-      k: TOKEN,
-      t0: t0,
-      name: name.value.trim(),
-      phone: phone.value.trim(),
-      email: email.value.trim(),
-      suburb: suburb.value.trim(),
-      postcode: postcode.value.trim(),
-      propertyType: document.getElementById('propertyType').value,
-      description: desc.value.trim(),
-      urgency: document.getElementById('urgency').value,
-      contactTime: document.getElementById('contactTime').value,
-      company: document.getElementById('company').value,
-      photos: photos.map(function (p) { return p.data; })
-    });
-
-    // text/plain = CORS "simple request": no preflight (Apps Script can't answer
-    // OPTIONS). fetch follows the 302 to script.googleusercontent.com, whose
-    // response allows any origin, so we can read the JSON ack.
-    fetch(ENDPOINT, { method: 'POST', body: payload, headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (data && data.ok) return showDone();
-        throw new Error(data && data.error || 'server');
-      })
-      .catch(function () {
-        // Last resort: fire-and-forget. Losing the ack beats losing the lead.
-        fetch(ENDPOINT, { method: 'POST', body: payload, mode: 'no-cors' })
-          .then(showDone)
-          .catch(showFail);
-      });
-  });
-
-  function showDone() {
-    var n = document.getElementById('name').value.trim().split(/\s+/)[0];
-    if (n) document.getElementById('doneName').textContent = ' ' + n;
-    document.getElementById('f').style.display = 'none';
-    document.getElementById('done').style.display = 'block';
-    window.scrollTo(0, 0);
-  }
-  function showFail() {
-    document.getElementById('f').style.display = 'none';
-    document.getElementById('fail').style.display = 'block';
-    window.scrollTo(0, 0);
-  }
-</script>
 </body>
 </html>
