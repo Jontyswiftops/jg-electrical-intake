@@ -506,6 +506,7 @@
       '<div class="top"><div><div class="name">' + esc(j.name) + '</div>' +
       '<div class="where">' + where.join(' · ') + '</div>' +
       (j.email ? '<div class="where" style="word-break:break-all;"><a href="mailto:' + esc(j.email) + '" style="color:#5f6368;">' + esc(j.email) + '</a></div>' : '') +
+      (j.emailBounced ? '<div class="where" style="color:#c5221f;font-weight:700;">Email bounced — nothing sends until it\'s fixed</div>' : '') +
       '</div>' +
       '<span class="pill" style="background:' + pc[0] + ';color:' + pc[1] + ';">' + esc(j.status) + '</span></div>' +
       (j.description ? '<div class="desc" onclick="this.classList.toggle(\'open\')">' + esc(j.description) + '</div>' : '') +
@@ -518,6 +519,12 @@
       contact.appendChild(btnLink('Text', 'sms:+61' + j.phone.slice(1)));
     }
     if (j.folder) contact.appendChild(btnLink('Folder', j.folder, true));
+    if (['Paid','Lost','Cancelled'].indexOf(j.status) === -1) {
+      var fixE = btnLink(j.email ? 'Fix email' : 'Add email', 'javascript:void(0)');
+      if (j.emailBounced) { fixE.style.color = '#c5221f'; fixE.style.fontWeight = '700'; }
+      fixE.onclick = function (ev) { ev.preventDefault(); openFixEmail(j, el); };
+      contact.appendChild(fixE);
+    }
     el.appendChild(contact);
 
     var actions = document.createElement('div');
@@ -629,11 +636,23 @@
         load();
       } else {
         el.classList.remove('busy');
-        toast('That didn\'t save — try again.');
+        if (res.error === 'email_bounced') toast('Their email bounced — tap Fix email on the card before sending anything else.');
+        else if (res.error === 'bad_email') toast('That email doesn\'t look right — check it and try again.');
+        else toast('That didn\'t save — try again.');
       }
     }).catch(function () {
       el.classList.remove('busy');
       toast('No connection — nothing changed.');
+    });
+  }
+
+  function openFixEmail(j, el) {
+    openModal('Fix email — ' + j.name, 'email', j.email || '', function (v) {
+      if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+        toast('That email doesn\'t look right — check it and try again.');
+        return;
+      }
+      send(j, el, { email: v }, 'Updating their email…');
     });
   }
 
