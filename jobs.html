@@ -576,13 +576,9 @@
     if (s === 'Done')
       A.push({ label:'Invoice', style:'primary', run:function (job, el) { openLineEditor(job, el, 'invoice'); } });
     if (s === 'Invoiced') {
-      A.push(promptAct('Paid', 'primary', 'Amount received ($)', 'number', j.invoiced || '', function (v) {
-        return { paid: Number(v), status: 'Paid' };
-      }, 'Booking the income + archiving…'));
+      A.push(paidAct(j, 'Paid', 'primary', false));
       // For clients Jarid would rather not invite to review: same receipt, no review line.
-      A.push(promptAct('Paid, no review ask', 'secondary', 'Amount received ($)', 'number', j.invoiced || '', function (v) {
-        return { paid: Number(v), status: 'Paid', skipReview: true };
-      }, 'Booking the income + archiving…'));
+      A.push(paidAct(j, 'Paid, no review ask', 'secondary', true));
     }
     if (['New Enquiry','Contacted','Quoted','Accepted'].indexOf(s) !== -1)
       A.push({ label:'Lost', style:'danger', run:function (job, el) {
@@ -627,6 +623,33 @@
     }};
   }
 
+  /** Paid: amount modal; paying short of the invoice asks why, and the reason
+      shows on the receipt as a "Less - ..." line. */
+  function paidAct(j, label, style, skipReview) {
+    var inv = Number(j.invoiced || 0);
+    return { label: label, style: style, run: function (job, el) {
+      openModal('Amount received ($)', 'number', inv || '', function (v, v2) {
+        var amt = Number(v);
+        if (!(amt > 0)) return;
+        var set = { paid: amt, status: 'Paid' };
+        if (skipReview) set.skipReview = true;
+        if (inv > 0 && amt < inv) set.discountReason = v2 || '';
+        send(job, el, set, 'Booking the income + archiving…');
+      }, {
+        hint: function (v) {
+          var amt = Number(v);
+          if (!inv || !(amt > 0) || amt === inv) return '';
+          if (amt < inv) return money(inv - amt) + ' less than invoice' +
+            (job.invoiceNo ? ' ' + job.invoiceNo : '') + ' (' + money(inv) +
+            '). The receipt will show it as a discount — say why below.';
+          return money(amt - inv) + ' more than the invoice (' + money(inv) + ') — double-check the amount.';
+        },
+        input2: { label: 'Why the lower amount? Goes on the receipt, e.g. "Travel fee waived"', preset: '' },
+        input2When: function (v) { var amt = Number(v); return inv > 0 && amt > 0 && amt < inv; }
+      });
+    }};
+  }
+
   function send(j, el, set, busyMsg) {
     el.classList.add('busy');
     toast(busyMsg || 'Saving…', true);
@@ -657,11 +680,12 @@
   }
 
   // modal — one main input, optional live hint + optional second (text) input
-  var mCb = null, mHintFn = null;
+  var mCb = null, mHintFn = null, mI2When = null;
   function openModal(title, type, preset, cb, extra) {
     extra = extra || {};
     mCb = cb;
     mHintFn = extra.hint || null;
+    mI2When = extra.input2When || null; // show input2 only while this returns true
     document.getElementById('mTitle').textContent = title;
     var inp = document.getElementById('mInput');
     inp.type = type;
@@ -675,9 +699,11 @@
     if (extra.input2) {
       lab2.textContent = extra.input2.label;
       inp2.value = extra.input2.preset || '';
-      lab2.style.display = 'block';
-      inp2.style.display = 'block';
+      var show2 = !mI2When || mI2When(preset);
+      lab2.style.display = show2 ? 'block' : 'none';
+      inp2.style.display = show2 ? 'block' : 'none';
     } else {
+      mI2When = null;
       lab2.style.display = 'none';
       inp2.style.display = 'none';
     }
@@ -687,6 +713,11 @@
   }
   document.getElementById('mInput').addEventListener('input', function () {
     if (mHintFn) document.getElementById('mHint').textContent = mHintFn(this.value);
+    if (mI2When) {
+      var show2 = mI2When(this.value);
+      document.getElementById('mLabel2').style.display = show2 ? 'block' : 'none';
+      document.getElementById('mInput2').style.display = show2 ? 'block' : 'none';
+    }
   });
   function closeModal() {
     document.getElementById('shade').style.display = 'none';
