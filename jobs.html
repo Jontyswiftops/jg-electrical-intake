@@ -209,6 +209,24 @@
       <div id="leRows"></div>
       <button type="button" class="sf-close" id="leAdd" style="margin-top:10px;">+ Add line</button>
     </div>
+    <div class="sf-card" id="leSmoke" style="display:none;">
+      <h3>Smoke alarms</h3>
+      <div class="sf-sub">If this invoice includes smoke alarm work, tick it here. A compliance certificate preps now but only goes to the client with their receipt, after they've paid.</div>
+      <div class="sf-tier" style="margin-top:10px;">
+        <button type="button" id="lsNo" class="on">No smoke alarm work</button>
+        <button type="button" id="lsYes">Smoke alarms on this job</button>
+      </div>
+      <div id="lsFields" style="display:none;">
+        <input class="sf-input" id="lsN" type="number" inputmode="numeric" min="1" max="30" placeholder="How many alarms? *">
+        <div class="sf-tier" style="margin-top:8px;">
+          <button type="button" id="lsT1" class="on">Wireless 10-yr battery</button>
+          <button type="button" id="lsT2">Hardwired 240V</button>
+          <button type="button" id="lsT3">Mixed</button>
+        </div>
+        <input class="sf-input" id="lsLocs" type="text" maxlength="200" placeholder="Locations, e.g. 3 bedrooms, hallway, lounge">
+        <input class="sf-input" id="lsDate" type="date">
+      </div>
+    </div>
     <div class="sf-card">
       <div class="le-total"><span>Job amount (before travel)</span><input class="le-a" id="leWork" type="number" inputmode="decimal" min="0" style="font-weight:700;"></div>
       <div class="le-total" id="leTravelRow"><span id="leTravelLabel">Travel</span><span id="leTravelAmt"></span></div>
@@ -497,8 +515,10 @@
         (j.scheduled === localTodayISO() ? ' <span class="today-flag">TODAY</span>' : '') +
         (j.address ? ' · ' + esc(j.address) : ''));
     if (j.status === 'Done') meta.push('<b style="color:#c5221f;">Not invoiced yet</b>');
-    if (j.status === 'Invoiced')
+    if (j.status === 'Invoiced') {
       meta.push('<b>' + esc(j.invoiceNo) + '</b> · ' + money(j.invoiced) + (j.invoiceSent ? ' · sent ' + ago(j.invoiceSent) : ''));
+      if (j.smokeCert && j.smokeCert.n) meta.push('<span style="color:#1e6b34;font-weight:600;">Smoke alarm cert ready · sends with the receipt once paid</span>');
+    }
     if (j.status === 'Paid') meta.push('paid <b>' + money(j.paid) + '</b> ' + ago(j.paidDate));
     if (j.notes) meta.push(esc(j.notes));
 
@@ -1382,6 +1402,31 @@
   // ── Line-item editor for quotes and invoices ───────────────────────────────
   var le = { job: null, el: null, mode: 'quote', lines: [], fee: 0 };
 
+  // Smoke alarm compliance section (invoice mode only).
+  var SMOKE_SETUPS = {
+    w: 'Photoelectric, wireless interconnected, sealed 10-year lithium battery',
+    h: 'Photoelectric, hardwired 240V with battery backup, interconnected',
+    m: 'Photoelectric, mixed hardwired and wireless, interconnected'
+  };
+  var lsOn = false, lsSetup = 'w';
+  function setLsOn(on) {
+    lsOn = on;
+    document.getElementById('lsNo').className = on ? '' : 'on';
+    document.getElementById('lsYes').className = on ? 'on' : '';
+    document.getElementById('lsFields').style.display = on ? 'block' : 'none';
+  }
+  function setLsSetup(key) {
+    lsSetup = key;
+    document.getElementById('lsT1').className = key === 'w' ? 'on' : '';
+    document.getElementById('lsT2').className = key === 'h' ? 'on' : '';
+    document.getElementById('lsT3').className = key === 'm' ? 'on' : '';
+  }
+  document.getElementById('lsNo').onclick = function () { setLsOn(false); };
+  document.getElementById('lsYes').onclick = function () { setLsOn(true); };
+  document.getElementById('lsT1').onclick = function () { setLsSetup('w'); };
+  document.getElementById('lsT2').onclick = function () { setLsSetup('h'); };
+  document.getElementById('lsT3').onclick = function () { setLsSetup('m'); };
+
   function openLineEditor(job, cardEl, mode) {
     le.job = job; le.el = cardEl; le.mode = mode;
     le.fee = feeFor(job);
@@ -1394,6 +1439,21 @@
       : [{ t: job.workDesc || 'Electrical work', a: null }];
     var total = mode === 'invoice' ? (job.invoiced || job.quoted || 0) : (job.quoted || 0);
     document.getElementById('leWork').value = total ? Math.max(0, total - le.fee) : '';
+    // Smoke alarm section: invoice mode only, preloaded from a saved tick.
+    document.getElementById('leSmoke').style.display = mode === 'invoice' ? 'block' : 'none';
+    if (mode === 'invoice') {
+      var sc = job.smokeCert;
+      setLsOn(!!(sc && sc.n));
+      var key = 'w';
+      if (sc && sc.setup) {
+        if (sc.setup.indexOf('hardwired 240V') !== -1 || sc.setup.indexOf('Hardwired') !== -1) key = 'h';
+        if (sc.setup.indexOf('mixed') !== -1 || sc.setup.indexOf('Mixed') !== -1) key = 'm';
+      }
+      setLsSetup(key);
+      document.getElementById('lsN').value = sc && sc.n ? sc.n : '';
+      document.getElementById('lsLocs').value = sc && sc.locs ? sc.locs : '';
+      document.getElementById('lsDate').value = (sc && sc.date) ? sc.date : localTodayISO();
+    }
     renderLines();
     document.getElementById('lineEd').style.display = 'block';
     document.getElementById('lineEd').scrollTop = 0;
@@ -1460,6 +1520,20 @@
     if (le.mode === 'quote') { set.quoted = total; set.status = 'Quoted'; busy = 'Building the quote PDF…'; }
     else if (le.mode === 'amend') { set.quoted = total; set.amendQuote = true; busy = 'Rebuilding the quote and emailing the update…'; }
     else { set.invoiced = total; set.status = 'Invoiced'; busy = 'Building the invoice PDF…'; }
+    if (le.mode === 'invoice') {
+      if (lsOn) {
+        var lsN = Number(document.getElementById('lsN').value);
+        if (!(lsN > 0)) { toast('How many smoke alarms went in? Enter the number.'); return; }
+        set.smokeCert = {
+          n: lsN,
+          setup: SMOKE_SETUPS[lsSetup],
+          locs: document.getElementById('lsLocs').value.trim(),
+          date: document.getElementById('lsDate').value || ''
+        };
+      } else {
+        set.smokeCert = null; // untick clears a previously saved cert
+      }
+    }
     document.getElementById('lineEd').style.display = 'none';
     send(le.job, le.el, set, busy);
   };
