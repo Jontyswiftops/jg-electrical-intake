@@ -427,9 +427,14 @@
       state.fees = res.fees || null;
       flushNoteQueue();
       var g = res.gst;
-      var pct = Math.min(100, Math.round(g.rolling / g.threshold * 100));
-      document.getElementById('gst').textContent =
-        money(g.rolling) + ' of ' + money(g.threshold) + ' GST threshold (' + pct + '%)';
+      if (g.mode === 'registered') {
+        document.getElementById('gst').textContent =
+          'GST set aside: ' + money(g.setAside) + ' for the annual return';
+      } else {
+        var pct = Math.min(100, Math.round(g.rolling / g.threshold * 100));
+        document.getElementById('gst').textContent =
+          money(g.rolling) + ' of ' + money(g.threshold) + ' GST threshold (' + pct + '%)';
+      }
       render();
     }).catch(function () {
       document.getElementById('refreshBtn').textContent = 'Refresh';
