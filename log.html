@@ -111,6 +111,7 @@
       <div class="tile"><div class="tl">Money in · <span id="mzFyLabel"></span></div><div class="tv" id="mzIn"></div></div>
       <div class="tile"><div class="tl">Money out</div><div class="tv" id="mzOut"></div></div>
       <div class="tile aside"><div class="tl">Set aside for tax (<span id="mzPct"></span>%)</div><div class="tv" id="mzTax"></div></div>
+      <div class="tile aside" id="mzGstTile" style="display:none;"><div class="tl">GST owed (ATO's cut)</div><div class="tv" id="mzGst"></div></div>
       <div class="tile" id="mzSpendTile"><div class="tl">Safe to spend</div><div class="tv" id="mzSpend"></div></div>
     </div>
 
@@ -135,6 +136,16 @@
     <div class="mcard">
       <h3>The year ahead</h3>
       <div class="proj" id="mzProj"></div>
+    </div>
+
+    <div class="mcard">
+      <h3>Tax time</h3>
+      <div class="sub">One tap builds the return-ready summary: money in and out, the Simpler BAS numbers, and expenses by category. The PDF lands in your email, ready to forward to your tax agent.</div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" id="txThis" style="flex:1;margin-top:8px;">This FY so far</button>
+        <button type="button" id="txLast" style="flex:1;margin-top:8px;background:#fff;border:1px solid var(--border);color:var(--navy);">Last FY</button>
+      </div>
+      <div id="txOut" style="display:none;margin-top:12px;"></div>
     </div>
   </div>
   <div class="viz-tip" id="mzTip"></div>
@@ -415,6 +426,44 @@
     if (which === 'reminders') loadReminders();
     if (which === 'money') loadMoney();
   }
+  function runTaxSummary(which, btn) {
+    var other = document.getElementById(which === 'current' ? 'txLast' : 'txThis');
+    btn.disabled = true; other.disabled = true;
+    var was = btn.textContent;
+    btn.textContent = 'Building…';
+    api({ action: 'yearSummary', fy: which }).then(function (d) {
+      btn.disabled = false; other.disabled = false; btn.textContent = was;
+      if (!d.ok) return remFlash('Couldn\'t build the summary, try again.', false);
+      var s = d.summary;
+      var rows = [
+        ['Income received', money0(s.income)],
+        ['Expenses paid', money0(s.expense)],
+        ['Profit before tax', money0(s.profit)]
+      ];
+      if (s.gst) {
+        rows.push(['G1 · Total sales', money0(s.gst.g1)]);
+        rows.push(['1A · GST on sales', money0(s.gst.a1)]);
+        rows.push(['1B · GST on purchases (est)', money0(s.gst.b1)]);
+        rows.push(['Net GST payable', money0(Math.max(0, s.gst.net))]);
+      }
+      var out = document.getElementById('txOut');
+      out.innerHTML = '<div style="font-weight:700;color:var(--navy);margin-bottom:6px;">' +
+        s.fyLabel + (s.toDate ? ' (year to date)' : '') + '</div>' +
+        rows.map(function (r) {
+          return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:14px;">' +
+            '<span>' + r[0] + '</span><b>' + r[1] + '</b></div>';
+        }).join('') +
+        '<div style="font-size:12.5px;color:#5f6368;margin-top:8px;">' +
+        (d.pdfEmailed ? 'PDF emailed to you - forward it to your tax man.' : 'Figures shown only - the PDF email didn\'t send, try again.') + '</div>';
+      out.style.display = 'block';
+    }).catch(function () {
+      btn.disabled = false; other.disabled = false; btn.textContent = was;
+      remFlash('No connection, try again with signal.', false);
+    });
+  }
+  document.getElementById('txThis').onclick = function () { runTaxSummary('current', this); };
+  document.getElementById('txLast').onclick = function () { runTaxSummary('last', this); };
+
   document.getElementById('tabExpense').onclick = function () { showTab('expense'); };
   document.getElementById('tabMoney').onclick = function () { showTab('money'); };
   document.getElementById('tabReminders').onclick = function () { showTab('reminders'); };
@@ -433,13 +482,19 @@
   }
 
   function renderMoney(d) {
-    var setAside = d.fy.income * d.taxPct / 100;
-    var spend = d.fy.income - d.fy.expense - setAside;
+    // GST-registered: the ATO's net GST is carved out first (it was never his),
+    // tax set-aside applies to the GST-free income, spend gets what's left.
+    var gstNet = d.gst ? d.gst.net : 0;
+    var taxBase = d.fy.income - (d.gst ? d.gst.collected : 0);
+    var setAside = taxBase * d.taxPct / 100;
+    var spend = d.fy.income - d.fy.expense - setAside - gstNet;
     document.getElementById('mzFyLabel').textContent = d.fy.label;
     document.getElementById('mzIn').textContent = money0(d.fy.income);
     document.getElementById('mzOut').textContent = money0(d.fy.expense);
     document.getElementById('mzPct').textContent = d.taxPct;
     document.getElementById('mzTax').textContent = money0(setAside);
+    document.getElementById('mzGstTile').style.display = d.gst ? 'block' : 'none';
+    if (d.gst) document.getElementById('mzGst').textContent = money0(gstNet);
     document.getElementById('mzSpend').textContent = money0(spend);
     document.getElementById('mzSpendTile').className = 'tile ' + (spend >= 0 ? 'spend-ok' : 'spend-bad');
 
