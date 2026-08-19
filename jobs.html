@@ -229,7 +229,7 @@
     </div>
     <div class="sf-card">
       <div class="le-total"><span>Job amount (before travel)</span><input class="le-a" id="leWork" type="number" inputmode="decimal" min="0" style="font-weight:700;"></div>
-      <div class="le-total" id="leTravelRow"><span id="leTravelLabel">Travel</span><span id="leTravelAmt"></span></div>
+      <div class="le-total" id="leTravelRow"><span id="leTravelLabel">Travel</span><span><span id="leTravelAmt"></span> <button type="button" id="leTravelToggle" style="border:1px solid var(--border);background:#fff;color:#5f6368;border-radius:6px;font-size:12.5px;padding:4px 9px;margin-left:8px;cursor:pointer;"></button></span></div>
       <div class="le-total"><span><b>Total on the document</b></span><b id="leGrand"></b></div>
       <button type="button" class="sf-go" id="leSave">Save</button>
     </div>
@@ -510,9 +510,10 @@
     var meta = [];
     if (j.status === 'New Enquiry') meta.push('came in ' + ago(j.created) + (j.contactTime ? ' · call: ' + esc(j.contactTime) : ''));
     if (j.quoted && ['Quoted','Accepted','Scheduled','In Progress','Done'].indexOf(j.status) !== -1) {
-      var f = feeFor(j);
+      var f = j.travelWaived ? 0 : feeFor(j);
       meta.push('quoted <b>' + money(j.quoted) + '</b>' +
         (f > 0 && j.quoted > f ? ' (incl ' + money(f) + ' travel)' : '') +
+        (j.travelWaived && feeFor(j) > 0 ? ' (travel waived)' : '') +
         (j.quoteSent ? ' · sent ' + ago(j.quoteSent) : ''));
     }
     if (j.scheduled && ['Scheduled','In Progress'].indexOf(j.status) !== -1)
@@ -1405,7 +1406,7 @@
   };
 
   // ── Line-item editor for quotes and invoices ───────────────────────────────
-  var le = { job: null, el: null, mode: 'quote', lines: [], fee: 0 };
+  var le = { job: null, el: null, mode: 'quote', lines: [], fee: 0, baseFee: 0, waived: false };
 
   // Smoke alarm compliance section (invoice mode only).
   var SMOKE_SETUPS = {
@@ -1434,7 +1435,9 @@
 
   function openLineEditor(job, cardEl, mode) {
     le.job = job; le.el = cardEl; le.mode = mode;
-    le.fee = feeFor(job);
+    le.baseFee = feeFor(job);
+    le.waived = !!job.travelWaived;
+    le.fee = le.waived ? 0 : le.baseFee;
     var titles = { quote: 'Quote', amend: 'Amend quote', invoice: 'Invoice' };
     document.getElementById('leTitle').textContent = titles[mode] + ': ' + job.name;
     document.getElementById('leSave').textContent =
@@ -1501,11 +1504,25 @@
       workInput.style.background = '';
     }
     var work = Number(workInput.value) || 0;
-    document.getElementById('leTravelRow').style.display = le.fee > 0 ? 'flex' : 'none';
-    document.getElementById('leTravelLabel').textContent = 'Travel (' + (le.job && le.job.zone ? le.job.zone : 'zone fee') + ')';
-    document.getElementById('leTravelAmt').textContent = money(le.fee);
+    // Travel row shows whenever the job HAS a zone fee; the toggle lets Jarid
+    // waive it for this job (mates rates, repeat locals, goodwill).
+    document.getElementById('leTravelRow').style.display = le.baseFee > 0 ? 'flex' : 'none';
+    document.getElementById('leTravelLabel').textContent = le.waived
+      ? 'Travel - not charged'
+      : 'Travel (' + (le.job && le.job.zone ? le.job.zone : 'zone fee') + ')';
+    var amtEl = document.getElementById('leTravelAmt');
+    amtEl.textContent = le.waived ? money(le.baseFee) : money(le.fee);
+    amtEl.style.textDecoration = le.waived ? 'line-through' : 'none';
+    amtEl.style.color = le.waived ? '#9aa0a6' : '';
+    document.getElementById('leTravelToggle').textContent = le.waived ? 'Add back' : 'Remove';
     document.getElementById('leGrand').textContent = money(work + le.fee);
   }
+
+  document.getElementById('leTravelToggle').onclick = function () {
+    le.waived = !le.waived;
+    le.fee = le.waived ? 0 : le.baseFee;
+    recomputeLines();
+  };
 
   document.getElementById('leWork').oninput = recomputeLines;
   document.getElementById('leAdd').onclick = function () { le.lines.push({ t: '', a: null }); renderLines(); };
@@ -1521,6 +1538,7 @@
       lines: lines,
       workDesc: lines.map(function (l) { return l.t; }).join('; ').slice(0, 300)
     };
+    if (le.baseFee > 0) set.travelWaived = le.waived;
     var busy;
     if (le.mode === 'quote') { set.quoted = total; set.status = 'Quoted'; busy = 'Building the quote PDF…'; }
     else if (le.mode === 'amend') { set.quoted = total; set.amendQuote = true; busy = 'Rebuilding the quote and emailing the update…'; }
