@@ -117,6 +117,7 @@
     </div>
     <div class="hdr-btns">
       <button class="refresh" id="addJobBtn" style="background:var(--amber);border-color:var(--amber);">+ Add job</button>
+      <button class="refresh" id="certBtn">Cert</button>
       <button class="refresh" id="refreshBtn">Refresh</button>
     </div>
   </header>
@@ -162,6 +163,41 @@
       <div class="sf-sub" id="ajNowHint" style="display:none;">Skips the quote stage - goes straight into Booked for the day below. Tap Start job on the day to do the safety record, then Done and Invoice.</div>
       <input class="sf-input" id="ajDate" type="date" style="display:none;">
       <button type="button" class="sf-go" id="ajSave">Add job</button>
+    </div>
+  </div>
+</div>
+
+<div id="certEd" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;">
+  <div class="sf-wrap">
+    <div class="sf-head">
+      <h2>Compliance certificate</h2>
+      <button class="sf-close" id="csClose">Cancel</button>
+    </div>
+    <div class="sf-card">
+      <div class="sf-sub" style="margin-bottom:10px;">Standalone smoke alarm cert - no job, no invoice. It files into Drive and can email straight to them. Every cert carries your licence number, so same care as a paying job.</div>
+      <input class="sf-input" id="csName" type="text" maxlength="80" placeholder="Their name *" style="margin-top:0;">
+      <input class="sf-input" id="csAddress" type="text" maxlength="120" placeholder="Property address *">
+      <input class="sf-input" id="csSuburb" type="text" maxlength="50" placeholder="Suburb">
+      <input class="sf-input" id="csEmail" type="email" maxlength="120" placeholder="Their email (sends the cert straight to them - optional)">
+    </div>
+    <div class="sf-card">
+      <h3>The alarms</h3>
+      <input class="sf-input" id="csN" type="number" inputmode="numeric" min="1" max="30" placeholder="How many alarms? *" style="margin-top:0;">
+      <div class="sf-tier" style="margin-top:8px;">
+        <button type="button" id="csT1" class="on">Wireless 10-yr battery</button>
+        <button type="button" id="csT2">Hardwired 240V</button>
+        <button type="button" id="csT3">Mixed</button>
+      </div>
+      <input class="sf-input" id="csLocs" type="text" maxlength="200" placeholder="Locations, e.g. 3 bedrooms, hallway, lounge">
+      <div class="sf-sub" style="margin-top:10px;margin-bottom:2px;">Installed / tested on</div>
+      <input class="sf-input" id="csDate" type="date" style="margin-top:4px;">
+      <div class="sf-sub" style="margin-top:10px;margin-bottom:2px;">Next test due</div>
+      <input class="sf-input" id="csNext" type="date" style="margin-top:4px;">
+      <div class="sf-tier" style="margin-top:12px;">
+        <button type="button" id="csInter">Interconnection tested - all alarms sounded together</button>
+      </div>
+      <div class="sf-sub" id="csInterHint">Tap to confirm the test. No test, no certificate.</div>
+      <button type="button" class="sf-go" id="csSave">Create certificate</button>
     </div>
   </div>
 </div>
@@ -1068,6 +1104,88 @@
       btn.disabled = false;
       btn.textContent = 'Add job';
       toast('No connection, nothing added.');
+    });
+  };
+
+  // ── Standalone compliance certificate (no job, no invoice) ─────────────────
+  var csSetup = 'w', csInterOk = false;
+  function setCsSetup(key) {
+    csSetup = key;
+    document.getElementById('csT1').className = key === 'w' ? 'on' : '';
+    document.getElementById('csT2').className = key === 'h' ? 'on' : '';
+    document.getElementById('csT3').className = key === 'm' ? 'on' : '';
+  }
+  document.getElementById('csT1').onclick = function () { setCsSetup('w'); };
+  document.getElementById('csT2').onclick = function () { setCsSetup('h'); };
+  document.getElementById('csT3').onclick = function () { setCsSetup('m'); };
+  document.getElementById('csInter').onclick = function () {
+    csInterOk = !csInterOk;
+    this.className = csInterOk ? 'on' : '';
+    document.getElementById('csInterHint').textContent = csInterOk
+      ? 'Confirmed - the test goes on the certificate.'
+      : 'Tap to confirm the test. No test, no certificate.';
+  };
+  function csPlusYear(iso) {
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    return (d.getFullYear() + 1) + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  document.getElementById('csDate').onchange = function () {
+    document.getElementById('csNext').value = csPlusYear(this.value);
+  };
+  document.getElementById('certBtn').onclick = function () {
+    ['csName','csAddress','csSuburb','csEmail','csLocs','csN'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    var today = localTodayISO();
+    document.getElementById('csDate').value = today;
+    document.getElementById('csNext').value = csPlusYear(today);
+    setCsSetup('w');
+    csInterOk = false;
+    document.getElementById('csInter').className = '';
+    document.getElementById('csInterHint').textContent = 'Tap to confirm the test. No test, no certificate.';
+    document.getElementById('certEd').style.display = 'block';
+    document.getElementById('certEd').scrollTop = 0;
+  };
+  document.getElementById('csClose').onclick = function () { document.getElementById('certEd').style.display = 'none'; };
+  document.getElementById('csSave').onclick = function () {
+    var name = document.getElementById('csName').value.trim();
+    var address = document.getElementById('csAddress').value.trim();
+    var n = Number(document.getElementById('csN').value);
+    if (name.length < 2 || !address || !(n > 0)) { toast('Name, property address and alarm count are needed.'); return; }
+    if (!csInterOk) { toast('Confirm the interconnection test first - no test, no certificate.'); return; }
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Building the certificate…';
+    api({
+      action: 'standaloneCert',
+      name: name,
+      address: address,
+      suburb: document.getElementById('csSuburb').value.trim(),
+      email: document.getElementById('csEmail').value.trim(),
+      n: n,
+      setup: SMOKE_SETUPS[csSetup],
+      locs: document.getElementById('csLocs').value.trim(),
+      date: document.getElementById('csDate').value,
+      nextTest: document.getElementById('csNext').value,
+      interTested: true
+    }).then(function (res) {
+      btn.disabled = false;
+      btn.textContent = 'Create certificate';
+      if (res.ok) {
+        document.getElementById('certEd').style.display = 'none';
+        toast(res.certNo + (res.emailed
+          ? ' created and emailed to them. Copy filed in Drive.'
+          : ' created - it\'s in Drive under 06 Certificates, link in your email.'));
+      } else if (res.error === 'no_template') {
+        toast('Template missing - run rebuildTemplates from the Job Book menu first.');
+      } else {
+        toast('Check the details and try again.');
+      }
+    }).catch(function () {
+      btn.disabled = false;
+      btn.textContent = 'Create certificate';
+      toast('No connection - nothing created.');
     });
   };
 
