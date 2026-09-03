@@ -95,8 +95,7 @@
   summary { font-weight: 700; color: var(--navy); cursor: pointer; font-size: 15px; }
   details p { margin-top: 10px; font-size: 14.5px; color: var(--grey); line-height: 1.6; }
 
-  /* reviews: hidden until the Google profile is live; remove style="display:none" and drop the review link in */
-  #reviews { display: none; }
+  /* reviews: enabled - Google Business Profile is live (5.0) */
 
   /* cta band */
   .band { background: var(--navy); color: #fff; text-align: center; padding: 56px 20px; }
@@ -253,14 +252,15 @@
   </div>
 </section>
 
-<!-- Enable this section once the Google Business Profile is live:
-     remove the #reviews display:none rule and add the review link. -->
 <section id="reviews">
   <div class="wrap">
     <div class="kicker">What clients say</div>
     <h2>Reviews</h2>
     <p class="lead">See what locals say about us on Google, or leave a review if we've done work for you.</p>
-    <p style="margin-top:18px;"><a class="btn-amber" href="GOOGLE_REVIEW_LINK">Read our Google reviews</a></p>
+    <p style="margin-top:18px;">
+      <a class="btn-amber" href="https://www.google.com/maps?cid=7164772589105062982" target="_blank" rel="noopener">Read our Google reviews</a>
+      <a class="btn-ghost" href="https://g.page/r/CUYkEI61Ym5jEBM/review" target="_blank" rel="noopener" style="margin-left:8px;border-color:var(--navy);color:var(--navy);">Leave a review</a>
+    </p>
   </div>
 </section>
 
