@@ -59,8 +59,8 @@
   .hero h1 em { color: var(--amber); font-style: normal; }
   .hero p { margin: 18px 0 28px; font-size: 17px; color: #c9d0dd; max-width: 560px; }
   .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
-  .btn-amber { background: var(--amber); color: var(--navy); padding: 15px 28px; border-radius: 8px; font-weight: 800; font-size: 16px; text-decoration: none; }
-  .btn-ghost { border: 2px solid rgba(255,255,255,.4); color: #fff; padding: 13px 26px; border-radius: 8px; font-weight: 700; font-size: 16px; text-decoration: none; }
+  .btn-amber { display: inline-block; white-space: nowrap; text-align: center; background: var(--amber); color: var(--navy); padding: 15px 28px; border-radius: 8px; font-weight: 800; font-size: 16px; text-decoration: none; }
+  .btn-ghost { display: inline-block; white-space: nowrap; text-align: center; border: 2px solid rgba(255,255,255,.4); color: #fff; padding: 13px 26px; border-radius: 8px; font-weight: 700; font-size: 16px; text-decoration: none; }
   .chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 30px; }
   .chip { display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); padding: 8px 14px; border-radius: 20px; font-size: 13.5px; color: #e6e9f0; }
   .chip svg { flex: 0 0 auto; }
@@ -263,10 +263,10 @@
     <div class="kicker">What clients say</div>
     <h2>Reviews</h2>
     <p class="lead">See what locals say about us on Google, or leave a review if we've done work for you.</p>
-    <p style="margin-top:18px;">
+    <div class="cta-row" style="margin-top:18px;">
       <a class="btn-amber" href="https://www.google.com/maps?cid=7164772589105062982" target="_blank" rel="noopener">Read our Google reviews</a>
-      <a class="btn-ghost" href="https://g.page/r/CUYkEI61Ym5jEBM/review" target="_blank" rel="noopener" style="margin-left:8px;border-color:var(--navy);color:var(--navy);">Leave a review</a>
-    </p>
+      <a class="btn-ghost" href="https://g.page/r/CUYkEI61Ym5jEBM/review" target="_blank" rel="noopener" style="border-color:var(--navy);color:var(--navy);">Leave a review</a>
+    </div>
   </div>
 </section>
 
