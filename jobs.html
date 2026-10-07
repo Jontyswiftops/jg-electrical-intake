@@ -95,7 +95,7 @@
   .np-thumb { position:relative; width:72px; height:72px; border-radius:8px; overflow:hidden; border:1px solid var(--border); }
   .np-thumb img { width:100%; height:100%; object-fit:cover; }
   .np-thumb button { position:absolute; top:2px; right:2px; width:22px; height:22px; border-radius:50%; border:0; background:rgba(32,33,36,.75); color:#fff; font-size:14px; line-height:1; cursor:pointer; padding:0; }
-  .hdr-btns { display:flex; gap:8px; }
+  .hdr-btns { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
 </style>
 </head>
 <body>
@@ -117,6 +117,7 @@
     </div>
     <div class="hdr-btns">
       <button class="refresh" id="addJobBtn" style="background:var(--amber);border-color:var(--amber);">+ Add job</button>
+      <button class="refresh" id="qiBtn">+ Invoice</button>
       <button class="refresh" id="certBtn">Cert</button>
       <button class="refresh" id="refreshBtn">Refresh</button>
     </div>
@@ -163,6 +164,34 @@
       <div class="sf-sub" id="ajNowHint" style="display:none;">Skips the quote stage - goes straight into Booked for the day below. Tap Start job on the day to do the safety record, then Done and Invoice.</div>
       <input class="sf-input" id="ajDate" type="date" style="display:none;">
       <button type="button" class="sf-go" id="ajSave">Add job</button>
+    </div>
+  </div>
+</div>
+
+<div id="qiEd" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;">
+  <div class="sf-wrap">
+    <div class="sf-head">
+      <h2>Quick invoice</h2>
+      <button class="sf-close" id="qiClose">Cancel</button>
+    </div>
+    <div class="sf-card">
+      <div class="sf-sub" style="margin-bottom:10px;">Work already done? Bill it straight away. The job lands in Owed and is tracked like any other: payment reminders, Paid, receipt, cashbook and GST.</div>
+      <input class="sf-input" id="qiName" type="text" maxlength="80" placeholder="Client name *" style="margin-top:0;">
+      <input class="sf-input" id="qiPhone" type="tel" maxlength="20" placeholder="Mobile *">
+      <input class="sf-input" id="qiEmail" type="email" maxlength="120" placeholder="Email (the invoice is sent here)">
+      <div style="display:flex;gap:8px;">
+        <input class="sf-input" id="qiSuburb" type="text" maxlength="50" placeholder="Suburb *" style="flex:1;">
+        <input class="sf-input" id="qiPostcode" type="text" inputmode="numeric" maxlength="4" placeholder="Postcode" style="flex:0 0 110px;">
+      </div>
+      <input class="sf-input" id="qiAddress" type="text" maxlength="120" placeholder="Address (shows on the invoice)">
+    </div>
+    <div class="sf-card">
+      <h3>The work</h3>
+      <div class="sf-sub">One line per item. Price every line and the total adds itself, or just type the total below.</div>
+      <div id="qiRows"></div>
+      <button type="button" class="sf-close" id="qiAdd" style="margin-top:10px;">+ Add line</button>
+      <div class="le-total" style="margin-top:16px;"><span><b>Invoice total</b> <span id="qiGstHint" style="font-size:12.5px;color:#5f6368;"></span></span><input class="le-a" id="qiAmount" type="number" inputmode="decimal" min="0" step="0.01" style="font-weight:700;"></div>
+      <button type="button" class="sf-go" id="qiSave">Create and send invoice</button>
     </div>
   </div>
 </div>
@@ -463,6 +492,7 @@
       state.fees = res.fees || null;
       flushNoteQueue();
       var g = res.gst;
+      state.gstMode = g.mode || '';
       if (g.mode === 'registered') {
         document.getElementById('gst').textContent =
           'GST set aside: ' + money(g.setAside) + ' for the annual return';
@@ -560,6 +590,7 @@
     if (j.status === 'Invoiced') {
       meta.push('<b>' + esc(j.invoiceNo) + '</b> · ' + money(j.invoiced) + (j.invoiceSent ? ' · sent ' + ago(j.invoiceSent) : ''));
       if (j.smokeCert && j.smokeCert.n) meta.push('<span style="color:#1e6b34;font-weight:600;">Smoke alarm cert ready · sends with the receipt once paid</span>');
+      if (j.source === 'Quick invoice' && !j.safetyDone) meta.push('<span style="color:#b06000;font-weight:600;">Quick invoice · safety record still to file</span>');
     }
     if (j.status === 'Paid') meta.push('paid <b>' + money(j.paid) + '</b> ' + ago(j.paidDate));
     if (j.notes) meta.push(esc(j.notes));
@@ -641,6 +672,8 @@
       A.push(paidAct(j, 'Paid', 'primary', false));
       // For clients Jarid would rather not invite to review: same receipt, no review line.
       A.push(paidAct(j, 'Paid, no review ask', 'secondary', true));
+      if (j.source === 'Quick invoice' && !j.safetyDone)
+        A.push({ label:'Safety record', style:'secondary', run:function (job, el) { openSafety(job, el, false); } });
     }
     if (['New Enquiry','Contacted','Quoted','Accepted'].indexOf(s) !== -1)
       A.push({ label:'Lost', style:'danger', run:function (job, el) {
@@ -1104,6 +1137,106 @@
       btn.disabled = false;
       btn.textContent = 'Add job';
       toast('No connection, nothing added.');
+    });
+  };
+
+  // ── Quick invoice (work already done: straight to the bill) ──────────────
+  var qi = { lines: [] };
+  function renderQiLines() {
+    var box = document.getElementById('qiRows');
+    box.innerHTML = '';
+    qi.lines.forEach(function (l, i) {
+      var row = document.createElement('div');
+      row.className = 'le-row';
+      var t = document.createElement('input');
+      t.className = 'le-t'; t.type = 'text'; t.maxLength = 120;
+      t.placeholder = 'e.g. Replaced 2 power points'; t.value = l.t;
+      t.oninput = function () { l.t = t.value; };
+      var a = document.createElement('input');
+      a.className = 'le-a'; a.type = 'number'; a.min = '0';
+      a.placeholder = '$ optional'; a.value = l.a != null ? l.a : '';
+      a.oninput = function () { l.a = a.value === '' ? null : Number(a.value); recomputeQi(); };
+      var x = document.createElement('button');
+      x.type = 'button'; x.textContent = '×';
+      x.onclick = function () { if (qi.lines.length > 1) { qi.lines.splice(i, 1); renderQiLines(); } };
+      row.appendChild(t); row.appendChild(a); row.appendChild(x);
+      box.appendChild(row);
+    });
+    recomputeQi();
+  }
+  function recomputeQi() {
+    var amt = document.getElementById('qiAmount');
+    var allPriced = qi.lines.length > 0 && qi.lines.every(function (l) { return l.a != null && l.a > 0; });
+    if (allPriced) {
+      var sum = 0;
+      qi.lines.forEach(function (l) { sum += l.a; });
+      amt.value = Math.round(sum * 100) / 100;
+      amt.readOnly = true;
+      amt.style.background = '#f0f1f3';
+    } else {
+      amt.readOnly = false;
+      amt.style.background = '';
+    }
+  }
+  document.getElementById('qiAdd').onclick = function () { qi.lines.push({ t: '', a: null }); renderQiLines(); };
+  document.getElementById('qiClose').onclick = function () { document.getElementById('qiEd').style.display = 'none'; };
+  document.getElementById('qiBtn').onclick = function () {
+    ['qiName','qiPhone','qiEmail','qiSuburb','qiPostcode','qiAddress','qiAmount'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    qi.lines = [{ t: '', a: null }];
+    document.getElementById('qiGstHint').textContent = state.gstMode === 'registered' ? '(includes GST)' : '';
+    renderQiLines();
+    document.getElementById('qiEd').style.display = 'block';
+    document.getElementById('qiEd').scrollTop = 0;
+  };
+  document.getElementById('qiSave').onclick = function () {
+    var name = document.getElementById('qiName').value.trim();
+    var phone = document.getElementById('qiPhone').value.trim();
+    var suburb = document.getElementById('qiSuburb').value.trim();
+    var email = document.getElementById('qiEmail').value.trim();
+    if (name.length < 2 || suburb.length < 2 || phone.replace(/[^0-9]/g, '').length < 8) {
+      toast('Name, mobile and suburb are needed.');
+      return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast('That email doesn\'t look right. Check it, or leave it blank.');
+      return;
+    }
+    var lines = qi.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null }; })
+      .filter(function (l) { return l.t; });
+    if (!lines.length) { toast('Add at least one line describing the work.'); return; }
+    var amount = Number(document.getElementById('qiAmount').value);
+    if (!(amount > 0)) { toast('Enter the invoice total, or price every line.'); return; }
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Building the invoice…';
+    api({
+      action: 'quickInvoice', name: name, phone: phone, email: email, suburb: suburb,
+      postcode: document.getElementById('qiPostcode').value.trim(),
+      address: document.getElementById('qiAddress').value.trim(),
+      lines: lines, amount: amount
+    }).then(function (res) {
+      btn.disabled = false;
+      btn.textContent = 'Create and send invoice';
+      if (!res.ok) { toast('Check the details and try again.'); return; }
+      document.getElementById('qiEd').style.display = 'none';
+      var inv = res.invoiceNo || res.jobId;
+      var msg = {
+        sent: inv + ' emailed to the client. It sits in Owed until they pay.',
+        draft: inv + ' is in your Gmail drafts. Open it and hit send. It sits in Owed until they pay.',
+        no_email: inv + ' created with no client email. The PDF link is in your inbox to text them.',
+        off: inv + ' created. Auto email is off, so send the PDF from the job folder.'
+      }[res.delivery] || (inv + ' created.');
+      if (res.warning) msg = inv + ' saved, but the invoice step hiccuped. Check the job folder.';
+      toast(msg, true);
+      setTimeout(function () { var t = document.getElementById('toast'); if (t.textContent === msg) t.style.display = 'none'; }, 7000);
+      state.filter = 'Owed';
+      load();
+    }).catch(function () {
+      btn.disabled = false;
+      btn.textContent = 'Create and send invoice';
+      toast('No connection. Nothing was created.');
     });
   };
 
