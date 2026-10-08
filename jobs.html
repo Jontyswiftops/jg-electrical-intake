@@ -190,7 +190,9 @@
       <div class="sf-sub">One line per item. Price every line and the total adds itself, or just type the total below.</div>
       <div id="qiRows"></div>
       <button type="button" class="sf-close" id="qiAdd" style="margin-top:10px;">+ Add line</button>
-      <div class="le-total" style="margin-top:16px;"><span><b>Invoice total</b> <span id="qiGstHint" style="font-size:12.5px;color:#5f6368;"></span></span><input class="le-a" id="qiAmount" type="number" inputmode="decimal" min="0" step="0.01" style="font-weight:700;"></div>
+      <div class="le-total" style="margin-top:16px;"><span><b id="qiAmtLabel">Invoice total</b></span><input class="le-a" id="qiAmount" type="number" inputmode="decimal" min="0" step="0.01" style="font-weight:700;"></div>
+      <div class="le-total" id="qiGstRow" style="display:none;"><span>GST 10%</span><span id="qiGstAmt"></span></div>
+      <div class="le-total" id="qiTotRow" style="display:none;"><span><b>Total on the invoice</b></span><b id="qiTotal"></b></div>
       <button type="button" class="sf-go" id="qiSave">Create and send invoice</button>
     </div>
   </div>
@@ -293,8 +295,9 @@
       </div>
     </div>
     <div class="sf-card">
-      <div class="le-total"><span>Job amount (before travel)</span><input class="le-a" id="leWork" type="number" inputmode="decimal" min="0" style="font-weight:700;"></div>
+      <div class="le-total"><span id="leWorkLabel">Job amount (before travel)</span><input class="le-a" id="leWork" type="number" inputmode="decimal" min="0" style="font-weight:700;"></div>
       <div class="le-total" id="leTravelRow"><span id="leTravelLabel">Travel</span><span><span id="leTravelAmt"></span> <button type="button" id="leTravelToggle" style="border:1px solid var(--border);background:#fff;color:#5f6368;border-radius:6px;font-size:12.5px;padding:4px 9px;margin-left:8px;cursor:pointer;"></button></span></div>
+      <div class="le-total" id="leGstRow" style="display:none;"><span>GST 10%</span><span id="leGstAmt"></span></div>
       <div class="le-total"><span><b>Total on the document</b></span><b id="leGrand"></b></div>
       <button type="button" class="sf-go" id="leSave">Save</button>
     </div>
@@ -1177,7 +1180,13 @@
       amt.readOnly = false;
       amt.style.background = '';
     }
+    var ex = Number(amt.value) || 0;
+    document.getElementById('qiGstRow').style.display = gstOn() ? 'flex' : 'none';
+    document.getElementById('qiTotRow').style.display = gstOn() ? 'flex' : 'none';
+    document.getElementById('qiGstAmt').textContent = money2(grandTotal(ex) - ex);
+    document.getElementById('qiTotal').textContent = money2(grandTotal(ex));
   }
+  document.getElementById('qiAmount').oninput = recomputeQi;
   document.getElementById('qiAdd').onclick = function () { qi.lines.push({ t: '', a: null }); renderQiLines(); };
   document.getElementById('qiClose').onclick = function () { document.getElementById('qiEd').style.display = 'none'; };
   document.getElementById('qiBtn').onclick = function () {
@@ -1185,7 +1194,7 @@
       document.getElementById(id).value = '';
     });
     qi.lines = [{ t: '', a: null }];
-    document.getElementById('qiGstHint').textContent = state.gstMode === 'registered' ? '(includes GST)' : '';
+    document.getElementById('qiAmtLabel').textContent = gstOn() ? 'Amount (ex GST)' : 'Invoice total';
     renderQiLines();
     document.getElementById('qiEd').style.display = 'block';
     document.getElementById('qiEd').scrollTop = 0;
@@ -1203,7 +1212,7 @@
       toast('That email doesn\'t look right. Check it, or leave it blank.');
       return;
     }
-    var lines = qi.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null }; })
+    var lines = qi.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null, x: gstOn() ? 1 : undefined }; })
       .filter(function (l) { return l.t; });
     if (!lines.length) { toast('Add at least one line describing the work.'); return; }
     var amount = Number(document.getElementById('qiAmount').value);
@@ -1215,7 +1224,7 @@
       action: 'quickInvoice', name: name, phone: phone, email: email, suburb: suburb,
       postcode: document.getElementById('qiPostcode').value.trim(),
       address: document.getElementById('qiAddress').value.trim(),
-      lines: lines, amount: amount
+      lines: lines, amount: grandTotal(amount)
     }).then(function (res) {
       btn.disabled = false;
       btn.textContent = 'Create and send invoice';
@@ -1488,7 +1497,7 @@
   function openNoteEditor(note) {
     np.editing = note || null;
     np.lines = (note && note.lines && note.lines.length)
-      ? note.lines.map(function (l) { return { t: String(l.t || ''), a: (l.a != null ? Number(l.a) : null) }; })
+      ? note.lines.map(function (l) { return { t: String(l.t || ''), a: (l.a != null ? exGst(Number(l.a), l.x) : null) }; })
       : [{ t: '', a: null }];
     np.photos = (note && note.pending && note.photos) ? note.photos.slice() : [];
     np.syncedCount = (note && !note.pending && note.photos) ? note.photos.length : 0;
@@ -1589,7 +1598,7 @@
   document.getElementById('npClose').onclick = function () { document.getElementById('noteEd').style.display = 'none'; };
 
   document.getElementById('npSave').onclick = function () {
-    var lines = np.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null }; })
+    var lines = np.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null, x: gstOn() ? 1 : undefined }; })
       .filter(function (l) { return l.t; });
     var obj = {
       name: document.getElementById('npName').value.trim(),
@@ -1684,6 +1693,14 @@
   document.getElementById('lsT2').onclick = function () { setLsSetup('h'); };
   document.getElementById('lsT3').onclick = function () { setLsSetup('m'); };
 
+  // GST-registered: what Jarid types is before GST and 10% goes on top. Jobs
+  // still store the GST-inclusive total the client pays.
+  function gstOn() { return state.gstMode === 'registered'; }
+  function grandTotal(exGstAmount) { return Math.round(exGstAmount * (gstOn() ? 1.1 : 1) * 100) / 100; }
+  // Line prices saved without the x flag were typed GST-inclusive.
+  function exGst(a, isEx) { return (gstOn() && !isEx) ? Math.round(a / 1.1 * 100) / 100 : a; }
+  function money2(n) { return '$' + Number(n).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
   function openLineEditor(job, cardEl, mode) {
     le.job = job; le.el = cardEl; le.mode = mode;
     le.baseFee = feeFor(job);
@@ -1694,10 +1711,10 @@
     document.getElementById('leSave').textContent =
       mode === 'invoice' ? 'Save invoice' : mode === 'amend' ? 'Save updated quote' : 'Save quote';
     le.lines = (job.lineItems && job.lineItems.length)
-      ? job.lineItems.map(function (l) { return { t: String(l.t || ''), a: (l.a != null ? Number(l.a) : null) }; })
+      ? job.lineItems.map(function (l) { return { t: String(l.t || ''), a: (l.a != null ? exGst(Number(l.a), l.x) : null) }; })
       : [{ t: job.workDesc || 'Electrical work', a: null }];
     var total = mode === 'invoice' ? (job.invoiced || job.quoted || 0) : (job.quoted || 0);
-    document.getElementById('leWork').value = total ? Math.max(0, total - le.fee) : '';
+    document.getElementById('leWork').value = total ? Math.max(0, Math.round(((gstOn() ? total / 1.1 : total) - le.fee) * 100) / 100) : '';
     // Smoke alarm section: invoice mode only, preloaded from a saved tick.
     document.getElementById('leSmoke').style.display = mode === 'invoice' ? 'block' : 'none';
     if (mode === 'invoice') {
@@ -1766,7 +1783,11 @@
     amtEl.style.textDecoration = le.waived ? 'line-through' : 'none';
     amtEl.style.color = le.waived ? '#9aa0a6' : '';
     document.getElementById('leTravelToggle').textContent = le.waived ? 'Add back' : 'Remove';
-    document.getElementById('leGrand').textContent = money(work + le.fee);
+    var grand = grandTotal(work + le.fee);
+    document.getElementById('leWorkLabel').textContent = gstOn() ? 'Job amount (ex GST, before travel)' : 'Job amount (before travel)';
+    document.getElementById('leGstRow').style.display = gstOn() ? 'flex' : 'none';
+    document.getElementById('leGstAmt').textContent = money2(grand - (work + le.fee));
+    document.getElementById('leGrand').textContent = money2(grand);
   }
 
   document.getElementById('leTravelToggle').onclick = function () {
@@ -1779,12 +1800,12 @@
   document.getElementById('leAdd').onclick = function () { le.lines.push({ t: '', a: null }); renderLines(); };
   document.getElementById('leClose').onclick = function () { document.getElementById('lineEd').style.display = 'none'; };
   document.getElementById('leSave').onclick = function () {
-    var lines = le.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null }; })
+    var lines = le.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null, x: gstOn() ? 1 : undefined }; })
       .filter(function (l) { return l.t; });
     if (!lines.length) { toast('Add at least one line.'); return; }
     var work = Number(document.getElementById('leWork').value) || 0;
     if (!(work > 0)) { toast('Enter the job amount, or price the lines.'); return; }
-    var total = work + le.fee;
+    var total = grandTotal(work + le.fee);
     var set = {
       lines: lines,
       workDesc: lines.map(function (l) { return l.t; }).join('; ').slice(0, 300)
