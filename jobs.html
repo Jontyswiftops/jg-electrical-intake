@@ -157,6 +157,8 @@
       </div>
       <input class="sf-input" id="ajAddress" type="text" maxlength="120" placeholder="Address (optional)">
       <input class="sf-input" id="ajDesc" type="text" maxlength="300" placeholder="What's the work? (optional)">
+      <div class="sf-tier" style="margin-top:12px;"><button type="button" id="ajBuilder">Builder / contractor job</button></div>
+      <div class="sf-sub" id="ajBuilderHint" style="display:none;">Invoice and receipt only. No review ask, reminders or courtesy emails, and this builder is remembered for next time.</div>
       <div class="sf-tier" style="margin-top:12px;">
         <button type="button" id="ajLater" class="on">Needs a quote first</button>
         <button type="button" id="ajNow">No quote, book it in</button>
@@ -184,6 +186,8 @@
         <input class="sf-input" id="qiPostcode" type="text" inputmode="numeric" maxlength="4" placeholder="Postcode" style="flex:0 0 110px;">
       </div>
       <input class="sf-input" id="qiAddress" type="text" maxlength="120" placeholder="Address (shows on the invoice)">
+      <div class="sf-tier" style="margin-top:12px;"><button type="button" id="qiBuilder">Builder / contractor job</button></div>
+      <div class="sf-sub" id="qiBuilderHint" style="display:none;">Invoice and receipt only. No review ask, reminders or courtesy emails, and this builder is remembered for next time.</div>
     </div>
     <div class="sf-card">
       <h3>The work</h3>
@@ -596,6 +600,7 @@
       if (j.source === 'Quick invoice' && !j.safetyDone) meta.push('<span style="color:#b06000;font-weight:600;">Quick invoice · safety record still to file</span>');
     }
     if (j.status === 'Paid') meta.push('paid <b>' + money(j.paid) + '</b> ' + ago(j.paidDate));
+    if (j.builder) meta.push('<span style="color:#205064;font-weight:600;">Builder job · quote, invoice and receipt only</span>');
     if (j.notes) meta.push(esc(j.notes));
 
     el.innerHTML =
@@ -620,6 +625,13 @@
       if (j.emailBounced) { fixE.style.color = '#c5221f'; fixE.style.fontWeight = '700'; }
       fixE.onclick = function (ev) { ev.preventDefault(); openFixEmail(j, el); };
       contact.appendChild(fixE);
+      var bl = btnLink(j.builder ? 'Builder ✓' : 'Builder job', 'javascript:void(0)');
+      if (j.builder) { bl.style.color = '#205064'; bl.style.fontWeight = '700'; }
+      bl.onclick = function (ev) {
+        ev.preventDefault();
+        send(j, el, { builder: !j.builder }, j.builder ? 'Switching back to a normal client…' : 'Marking as a builder job…');
+      };
+      contact.appendChild(bl);
     }
     el.appendChild(contact);
 
@@ -1081,12 +1093,23 @@
   }
   document.getElementById('ajLater').onclick = function () { setAjMode(false); };
   document.getElementById('ajNow').onclick = function () { setAjMode(true); };
+  // Builder / contractor jobs: paperwork only (quote, invoice, receipt).
+  function setBuilderToggle(btnId, hintId, on) {
+    document.getElementById(btnId).className = on ? 'on' : '';
+    document.getElementById(hintId).style.display = on ? 'block' : 'none';
+  }
+  function builderToggleOn(btnId) { return document.getElementById(btnId).className === 'on'; }
+  [['ajBuilder', 'ajBuilderHint'], ['qiBuilder', 'qiBuilderHint']].forEach(function (p) {
+    document.getElementById(p[0]).onclick = function () { setBuilderToggle(p[0], p[1], !builderToggleOn(p[0])); };
+  });
+
   document.getElementById('addJobBtn').onclick = function () {
     ajFromNote = null;
     ['ajName','ajPhone','ajEmail','ajSuburb','ajPostcode','ajAddress','ajDesc','ajDate'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
     setAjMode(false);
+    setBuilderToggle('ajBuilder', 'ajBuilderHint', false);
     document.getElementById('addJob').style.display = 'block';
     document.getElementById('addJob').scrollTop = 0;
   };
@@ -1103,7 +1126,7 @@
     btn.disabled = true;
     btn.textContent = 'Adding…';
     api({
-      action: 'addJob', name: name, phone: phone, suburb: suburb,
+      action: 'addJob', name: name, phone: phone, suburb: suburb, builder: builderToggleOn('ajBuilder'),
       email: document.getElementById('ajEmail').value.trim(),
       postcode: document.getElementById('ajPostcode').value.trim(),
       address: document.getElementById('ajAddress').value.trim(),
@@ -1190,6 +1213,7 @@
   document.getElementById('qiAdd').onclick = function () { qi.lines.push({ t: '', a: null }); renderQiLines(); };
   document.getElementById('qiClose').onclick = function () { document.getElementById('qiEd').style.display = 'none'; };
   document.getElementById('qiBtn').onclick = function () {
+    setBuilderToggle('qiBuilder', 'qiBuilderHint', false);
     ['qiName','qiPhone','qiEmail','qiSuburb','qiPostcode','qiAddress','qiAmount'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
@@ -1221,7 +1245,7 @@
     btn.disabled = true;
     btn.textContent = 'Building the invoice…';
     api({
-      action: 'quickInvoice', name: name, phone: phone, email: email, suburb: suburb,
+      action: 'quickInvoice', name: name, phone: phone, email: email, suburb: suburb, builder: builderToggleOn('qiBuilder'),
       postcode: document.getElementById('qiPostcode').value.trim(),
       address: document.getElementById('qiAddress').value.trim(),
       lines: lines, amount: grandTotal(amount)
@@ -1487,6 +1511,7 @@
       : (n.note || '').slice(0, 300);
     document.getElementById('ajDate').value = '';
     setAjMode(false);
+    setBuilderToggle('ajBuilder', 'ajBuilderHint', false);
     document.getElementById('addJob').style.display = 'block';
     document.getElementById('addJob').scrollTop = 0;
   }
