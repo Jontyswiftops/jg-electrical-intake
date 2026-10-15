@@ -324,6 +324,22 @@
   </div>
 </div>
 
+<div id="rsEd" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;">
+  <div class="sf-wrap">
+    <div class="sf-head">
+      <h2 id="rsTitle">Resend</h2>
+      <button class="sf-close" id="rsClose">Cancel</button>
+    </div>
+    <div class="sf-card">
+      <div class="sf-sub" id="rsTo"></div>
+      <textarea class="sf-input em-text" id="rsText" rows="9" maxlength="3000"></textarea>
+      <div class="sf-sub" id="rsHint" style="margin-top:8px;"></div>
+      <button type="button" class="sf-close" id="rsUndo" style="margin-top:10px;">Undo my changes</button>
+      <button type="button" class="sf-go" id="rsSend">Send</button>
+    </div>
+  </div>
+</div>
+
 <div id="safety">
   <div class="sf-wrap">
     <div class="sf-head">
@@ -721,11 +737,11 @@
           send(job, el, { status: back }, 'Reopening — bringing the folder back too…');
         }
       }});
-    var rs = resendable(j);
-    if (rs)
-      A.push({ label: rs === 'quote' ? 'Resend quote' : 'Resend invoice', style:'secondary', run:function (job, el) {
+    var rsKind = resendable(j);
+    if (rsKind)
+      A.push({ label: rsKind === 'quote' ? 'Resend quote' : 'Resend invoice', style:'secondary', run:function (job, el) {
         if (!job.email) { toast('No email on this job. Tap Add email first.'); return; }
-        if (confirm('Send the ' + rs + ' again to ' + job.email + '?')) send(job, el, { resend: true }, 'Resending the ' + rs + '…');
+        openResend(job, el, rsKind);
       }});
     A.push(promptAct('Note', 'secondary', 'Add a note', 'text', '', function (v) { return { noteAppend: v }; }));
     return A;
@@ -793,8 +809,8 @@
         toast(res.warning === 'email_failed'
             ? 'Saved, but the email did NOT send. Gmail wouldn\'t accept "' + (res.badEmail || 'that address') + '". Tap Fix email (in red), correct it, and say yes to sending it again.'
           : res.warning ? 'Saved — but an automation hiccuped, check the sheet.'
-          : res.resent === 'quote' ? 'Quote sent to the new email.'
-          : res.resent === 'invoice' ? 'Invoice sent to the new email.'
+          : res.resent === 'quote' ? 'Quote sent.'
+          : res.resent === 'invoice' ? 'Invoice sent.'
           : res.resent === 'none' ? 'Saved, but there was no quote or invoice PDF to resend.'
           : 'Done.', res.warning === 'email_failed');
         if (res.warning === 'email_failed') {
@@ -861,15 +877,69 @@
         return;
       }
       if (!ownOk('', v)) return;
-      var set = { email: v };
       var doc = resendable(j);
       if (doc && v && (j.emailBounced || v.toLowerCase() !== String(j.email || '').toLowerCase()) &&
-          confirm('Email updated. Send the ' + doc + ' to ' + v + ' now?')) {
-        set.resend = true;
+          confirm('Email updated. Send the ' + doc + ' to ' + v + ' now? You can check the email first.')) {
+        openResend(j, el, doc, { email: v });
+        return;
       }
-      send(j, el, set, set.resend ? 'Updating their email and resending the ' + doc + '…' : 'Updating their email…');
+      send(j, el, { email: v }, 'Updating their email…');
     });
   }
+
+  // Resend: show the email first so Jarid can tweak it ("sorry for the
+  // delay..."). extra carries a fixed email to save in the same go.
+  var rs = { extra: {} };
+  function closeResend() { document.getElementById('rsEd').style.display = 'none'; }
+  function openResend(j, el, kind, extra) {
+    rs = { job: j, el: el, kind: kind, extra: extra || {}, start: '' };
+    var to = rs.extra.email || j.email;
+    document.getElementById('rsTitle').textContent = (kind === 'quote' ? 'Resend quote: ' : 'Resend invoice: ') + j.name;
+    document.getElementById('rsTo').textContent = 'To ' + to + ', with the same ' + kind + ' PDF attached. Change the message if you like.';
+    document.getElementById('rsHint').textContent = kind === 'quote'
+      ? 'The Accept button and your signature go on the bottom.'
+      : 'Your signature goes on the bottom.';
+    document.getElementById('rsClose').textContent = rs.extra.email ? 'Just save email' : 'Cancel';
+    var ta = document.getElementById('rsText');
+    ta.value = 'Loading the email…';
+    ta.disabled = true;
+    document.getElementById('rsSend').disabled = true;
+    document.getElementById('rsSend').textContent = 'Send ' + kind;
+    document.getElementById('rsEd').style.display = 'block';
+    document.getElementById('rsEd').scrollTop = 0;
+    api({ action: 'resendPreview', jobId: j.id }).then(function (res) {
+      if (rs.job !== j) return; // closed and reopened on another job
+      if (!res.ok) {
+        closeResend();
+        toast(res.error === 'nothing_to_resend' ? 'There\'s no ' + kind + ' PDF on this job to resend.' : 'Couldn\'t load the email. Try again.');
+        return;
+      }
+      rs.start = res.text || '';
+      ta.value = rs.start;
+      ta.disabled = false;
+      document.getElementById('rsSend').disabled = false;
+    }).catch(function () {
+      closeResend();
+      toast('No connection. Nothing was sent.');
+    });
+  }
+  document.getElementById('rsClose').onclick = function () {
+    closeResend();
+    // From Fix email: still save the corrected address, just don't send.
+    if (rs.extra.email) send(rs.job, rs.el, { email: rs.extra.email }, 'Saving their email (nothing sent)…');
+  };
+  document.getElementById('rsUndo').onclick = function () {
+    if (!document.getElementById('rsText').disabled) document.getElementById('rsText').value = rs.start;
+  };
+  document.getElementById('rsSend').onclick = function () {
+    var t = document.getElementById('rsText').value.trim();
+    if (!t) { toast('The email is empty. Type a message or tap Undo my changes.'); return; }
+    var set = { resend: true };
+    for (var k in rs.extra) set[k] = rs.extra[k];
+    if (t !== rs.start.trim()) set.resendText = t;
+    closeResend();
+    send(rs.job, rs.el, set, 'Sending the ' + rs.kind + '…');
+  };
 
   // modal — one main input, optional live hint + optional second (text) input
   var mCb = null, mHintFn = null, mI2When = null;
