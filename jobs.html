@@ -309,9 +309,9 @@
     </div>
     <div class="sf-card" id="leEmail" style="display:none;">
       <h3>Email to the builder</h3>
-      <div class="sf-sub">Change the wording for this job if you like. {invoice}, {total} and {due} fill in by themselves. Your signature goes on the bottom.</div>
+      <div class="sf-sub" id="leEmailHint"></div>
       <textarea class="sf-input em-text" id="leEmailText" rows="8" maxlength="3000"></textarea>
-      <label class="em-save"><input type="checkbox" id="leEmailSave"> Use this wording for all my builder invoices</label>
+      <label class="em-save"><input type="checkbox" id="leEmailSave"> <span id="leEmailSaveLabel"></span></label>
       <button type="button" class="sf-close" id="leEmailUndo" style="margin-top:10px;">Undo my changes</button>
     </div>
     <div class="sf-card">
@@ -514,6 +514,7 @@
       state.notes = res.notes || [];
       state.fees = res.fees || null;
       state.builderEmail = res.builderEmail || '';
+      state.builderQuoteEmail = res.builderQuoteEmail || '';
       flushNoteQueue();
       var g = res.gst;
       state.gstMode = g.mode || '';
@@ -1135,7 +1136,7 @@
     document.getElementById('qiEmail').style.display = on ? 'block' : 'none';
     if (on && !qiEmailEdited) {
       document.getElementById('qiEmailText').value =
-        builderEmailFor(document.getElementById('qiName').value.trim(), qiEmailAddr());
+        builderEmailFor(document.getElementById('qiName').value.trim(), qiEmailAddr(), state.builderEmail);
     }
   }
   ['qiName', 'qiAddress', 'qiSuburb'].forEach(function (id) {
@@ -1779,11 +1780,12 @@
   function exGst(a, isEx) { return (gstOn() && !isEx) ? Math.round(a / 1.1 * 100) / 100 : a; }
   function money2(n) { return '$' + Number(n).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-  // Builder invoice email: the saved wording with this job's name and address
-  // dropped in, so it reads naturally. Saving as the default turns them back
-  // into {name}/{address} so the next builder gets their own.
-  function builderEmailFor(name, address) {
-    var t = state.builderEmail || '';
+  // Builder invoice/quote email: the saved wording with this job's name and
+  // address dropped in, so it reads naturally. Saving as the default turns
+  // them back into {name}/{address} so the next builder gets their own.
+  var QUOTE_AMEND_NOTE = 'This updated quote replaces the earlier one.';
+  function builderEmailFor(name, address, tpl) {
+    var t = tpl || '';
     if (name) t = t.split('{name}').join(name);
     if (address) t = t.split('{address}').join(address);
     return t;
@@ -1797,9 +1799,18 @@
 
   function openLineEditor(job, cardEl, mode) {
     le.job = job; le.el = cardEl; le.mode = mode;
-    le.emailOn = mode === 'invoice' && !!job.builder && !!state.builderEmail; // hidden until the server sends wording
+    le.emailKind = mode === 'invoice' ? 'invoice' : 'quote';
+    var tpl = le.emailKind === 'invoice' ? state.builderEmail : state.builderQuoteEmail;
+    le.emailOn = !!job.builder && !!tpl; // hidden until the server sends wording
     le.emailAddr = [job.address, job.suburb].filter(Boolean).join(', ');
-    le.emailStart = builderEmailFor(job.name, le.emailAddr);
+    le.emailStart = builderEmailFor(job.name, le.emailAddr, tpl) +
+      (mode === 'amend' && tpl ? '\n\n' + QUOTE_AMEND_NOTE : '');
+    document.getElementById('leEmailHint').textContent = le.emailKind === 'invoice'
+      ? 'Change the wording for this job if you like. {invoice}, {total} and {due} fill in by themselves. Your signature goes on the bottom.'
+      : 'Change the wording for this job if you like. {quote} and {total} fill in by themselves. The accept button and your signature go on the bottom.';
+    document.getElementById('leEmailSaveLabel').textContent = le.emailKind === 'invoice'
+      ? 'Use this wording for all my builder invoices'
+      : 'Use this wording for all my builder quotes';
     document.getElementById('leEmail').style.display = le.emailOn ? 'block' : 'none';
     document.getElementById('leEmailText').value = le.emailStart;
     document.getElementById('leEmailSave').checked = false;
@@ -1929,14 +1940,20 @@
       } else {
         set.smokeCert = null; // untick clears a previously saved cert
       }
-      if (le.emailOn) {
-        var et = document.getElementById('leEmailText').value.trim();
-        if (!et) { toast('The email to the builder is empty. Type a message or tap Undo my changes.'); return; }
+    }
+    if (le.emailOn) {
+      var et = document.getElementById('leEmailText').value.trim();
+      if (!et) { toast('The email to the builder is empty. Type a message or tap Undo my changes.'); return; }
+      var keep = document.getElementById('leEmailSave').checked
+        ? builderEmailToTemplate(et, le.job.name, le.emailAddr) : '';
+      if (le.emailKind === 'invoice') {
         set.emailText = et;
-        if (document.getElementById('leEmailSave').checked) {
-          set.saveEmailText = builderEmailToTemplate(et, le.job.name, le.emailAddr);
-          state.builderEmail = set.saveEmailText;
-        }
+        if (keep) { set.saveEmailText = keep; state.builderEmail = keep; }
+      } else {
+        set.quoteEmailText = et;
+        // The "replaces the earlier one" line belongs to this update only.
+        keep = keep.split('\n\n' + QUOTE_AMEND_NOTE).join('').split(QUOTE_AMEND_NOTE).join('').trim();
+        if (keep) { set.saveQuoteEmailText = keep; state.builderQuoteEmail = keep; }
       }
     }
     document.getElementById('lineEd').style.display = 'none';
