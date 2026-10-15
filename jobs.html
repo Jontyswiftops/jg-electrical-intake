@@ -192,7 +192,7 @@
       <div class="sf-tier" style="margin-top:12px;"><button type="button" id="qiBuilder">Builder / contractor job</button></div>
       <div class="sf-sub" id="qiBuilderHint" style="display:none;">Invoice and receipt only. No review ask, reminders or courtesy emails, and this builder is remembered for next time.</div>
     </div>
-    <div class="sf-card" id="qiEmail" style="display:none;">
+    <div class="sf-card" id="qiEmailCard" style="display:none;">
       <h3>Email to the builder</h3>
       <div class="sf-sub">Change the wording if you like. {invoice}, {total} and {due} fill in by themselves. Your signature goes on the bottom.</div>
       <textarea class="sf-input em-text" id="qiEmailText" rows="8" maxlength="3000"></textarea>
@@ -1133,7 +1133,7 @@
   }
   function syncQiEmail() {
     var on = builderToggleOn('qiBuilder') && !!state.builderEmail;
-    document.getElementById('qiEmail').style.display = on ? 'block' : 'none';
+    document.getElementById('qiEmailCard').style.display = on ? 'block' : 'none';
     if (on && !qiEmailEdited) {
       document.getElementById('qiEmailText').value =
         builderEmailFor(document.getElementById('qiName').value.trim(), qiEmailAddr(), state.builderEmail);
