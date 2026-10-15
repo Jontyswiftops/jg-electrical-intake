@@ -790,11 +790,17 @@
     toast(busyMsg || 'Saving…', true);
     api({ action:'update', jobId: j.id, set: set }).then(function (res) {
       if (res.ok) {
-        toast(res.warning ? 'Saved — but an automation hiccuped, check the sheet.'
+        toast(res.warning === 'email_failed'
+            ? 'Saved, but the email did NOT send. Gmail wouldn\'t accept "' + (res.badEmail || 'that address') + '". Tap Fix email (in red), correct it, and say yes to sending it again.'
+          : res.warning ? 'Saved — but an automation hiccuped, check the sheet.'
           : res.resent === 'quote' ? 'Quote sent to the new email.'
           : res.resent === 'invoice' ? 'Invoice sent to the new email.'
           : res.resent === 'none' ? 'Saved, but there was no quote or invoice PDF to resend.'
-          : 'Done.');
+          : 'Done.', res.warning === 'email_failed');
+        if (res.warning === 'email_failed') {
+          var failMsg = document.getElementById('toast').textContent;
+          setTimeout(function () { var t = document.getElementById('toast'); if (t.textContent === failMsg) t.style.display = 'none'; }, 12000);
+        }
         load();
       } else {
         el.classList.remove('busy');
@@ -806,6 +812,18 @@
       el.classList.remove('busy');
       toast('No connection — nothing changed.');
     });
+  }
+
+  // Pasted emails: strip "mailto:" (copied links), "Name <x@y.com>", stray
+  // punctuation. Gmail refuses those, so the document never goes out.
+  var EMAIL_OK = /^[^\s@:<>()\[\],;"]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+  function cleanEmailInput(raw) {
+    var e = String(raw || '').trim();
+    var m = e.match(/<\s*([^<>\s]+@[^<>\s]+)\s*>/);
+    if (m) e = m[1];
+    e = e.replace(/^mailto:/i, '').split('?')[0];
+    try { e = decodeURIComponent(e); } catch (err) { /* leave it */ }
+    return e.replace(/^[\s'"(\[<]+/, '').replace(/[\s'")\]>.,;:]+$/, '');
   }
 
   // Jarid's own details landing on a client's job (his phone autofills them):
@@ -837,14 +855,15 @@
 
   function openFixEmail(j, el) {
     openModal('Fix email — ' + j.name, 'email', j.email || '', function (v) {
-      if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+      v = cleanEmailInput(v);
+      if (v && !EMAIL_OK.test(v)) {
         toast('That email doesn\'t look right — check it and try again.');
         return;
       }
       if (!ownOk('', v)) return;
       var set = { email: v };
       var doc = resendable(j);
-      if (doc && v && v.toLowerCase() !== String(j.email || '').toLowerCase() &&
+      if (doc && v && (j.emailBounced || v.toLowerCase() !== String(j.email || '').toLowerCase()) &&
           confirm('Email updated. Send the ' + doc + ' to ' + v + ' now?')) {
         set.resend = true;
       }
@@ -1208,7 +1227,13 @@
       toast('Name, mobile and suburb are needed.');
       return;
     }
-    if (!ownOk(phone, document.getElementById('ajEmail').value)) return;
+    var ajE = cleanEmailInput(document.getElementById('ajEmail').value);
+    document.getElementById('ajEmail').value = ajE;
+    if (ajE && !EMAIL_OK.test(ajE)) {
+      toast('That email doesn\'t look right. Check it, or leave it blank.');
+      return;
+    }
+    if (!ownOk(phone, ajE)) return;
     var btn = this;
     btn.disabled = true;
     btn.textContent = 'Adding…';
@@ -1317,12 +1342,13 @@
     var name = document.getElementById('qiName').value.trim();
     var phone = document.getElementById('qiPhone').value.trim();
     var suburb = document.getElementById('qiSuburb').value.trim();
-    var email = document.getElementById('qiEmail').value.trim();
+    var email = cleanEmailInput(document.getElementById('qiEmail').value);
+    document.getElementById('qiEmail').value = email;
     if (name.length < 2 || suburb.length < 2 || phone.replace(/[^0-9]/g, '').length < 8) {
       toast('Name, mobile and suburb are needed.');
       return;
     }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email && !EMAIL_OK.test(email)) {
       toast('That email doesn\'t look right. Check it, or leave it blank.');
       return;
     }
@@ -1360,7 +1386,8 @@
         sent: inv + ' emailed to the client. It sits in Owed until they pay.',
         draft: inv + ' is in your Gmail drafts. Open it and hit send. It sits in Owed until they pay.',
         no_email: inv + ' created with no client email. The PDF link is in your inbox to text them.',
-        off: inv + ' created. Auto email is off, so send the PDF from the job folder.'
+        off: inv + ' created. Auto email is off, so send the PDF from the job folder.',
+        failed: inv + ' created, but the email did NOT send. Check the address with Fix email on the card, then resend.'
       }[res.delivery] || (inv + ' created.');
       if (res.warning) msg = inv + ' saved, but the invoice step hiccuped. Check the job folder.';
       toast(msg, true);
