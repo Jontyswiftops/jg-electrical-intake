@@ -71,6 +71,9 @@
   .sf-haz select { flex:1; font-size:14px; padding:8px; border:1px solid var(--border); border-radius:7px; background:#fff; }
   .sf-haz .hz-ctl { margin-top:6px; }
   .sf-input { width:100%; font-size:15px; padding:11px; border:1px solid var(--border); border-radius:8px; margin-top:8px; font-family:inherit; }
+  .em-text { resize:vertical; line-height:1.45; min-height:150px; }
+  .em-save { display:flex; align-items:center; gap:8px; font-size:14px; margin-top:10px; cursor:pointer; }
+  .em-save input { width:18px; height:18px; flex:none; }
   .sf-sub { font-size:12.5px; color:#5f6368; margin-top:4px; }
   .sf-go { width:100%; margin-top:6px; padding:15px; font-size:16px; font-weight:800; color:var(--navy); background:var(--amber); border:0; border-radius:10px; cursor:pointer; }
   .sf-go:disabled { opacity:.6; }
@@ -189,6 +192,12 @@
       <div class="sf-tier" style="margin-top:12px;"><button type="button" id="qiBuilder">Builder / contractor job</button></div>
       <div class="sf-sub" id="qiBuilderHint" style="display:none;">Invoice and receipt only. No review ask, reminders or courtesy emails, and this builder is remembered for next time.</div>
     </div>
+    <div class="sf-card" id="qiEmail" style="display:none;">
+      <h3>Email to the builder</h3>
+      <div class="sf-sub">Change the wording if you like. {invoice}, {total} and {due} fill in by themselves. Your signature goes on the bottom.</div>
+      <textarea class="sf-input em-text" id="qiEmailText" rows="8" maxlength="3000"></textarea>
+      <label class="em-save"><input type="checkbox" id="qiEmailSave"> Use this wording for all my builder invoices</label>
+    </div>
     <div class="sf-card">
       <h3>The work</h3>
       <div class="sf-sub">One line per item. Price every line and the total adds itself, or just type the total below.</div>
@@ -297,6 +306,13 @@
         <input class="sf-input" id="lsLocs" type="text" maxlength="200" placeholder="Locations, e.g. 3 bedrooms, hallway, lounge">
         <input class="sf-input" id="lsDate" type="date">
       </div>
+    </div>
+    <div class="sf-card" id="leEmail" style="display:none;">
+      <h3>Email to the builder</h3>
+      <div class="sf-sub">Change the wording for this job if you like. {invoice}, {total} and {due} fill in by themselves. Your signature goes on the bottom.</div>
+      <textarea class="sf-input em-text" id="leEmailText" rows="8" maxlength="3000"></textarea>
+      <label class="em-save"><input type="checkbox" id="leEmailSave"> Use this wording for all my builder invoices</label>
+      <button type="button" class="sf-close" id="leEmailUndo" style="margin-top:10px;">Undo my changes</button>
     </div>
     <div class="sf-card">
       <div class="le-total"><span id="leWorkLabel">Job amount (before travel)</span><input class="le-a" id="leWork" type="number" inputmode="decimal" min="0" style="font-weight:700;"></div>
@@ -497,6 +513,7 @@
       state.jobs = res.jobs;
       state.notes = res.notes || [];
       state.fees = res.fees || null;
+      state.builderEmail = res.builderEmail || '';
       flushNoteQueue();
       var g = res.gst;
       state.gstMode = g.mode || '';
@@ -1100,8 +1117,31 @@
   }
   function builderToggleOn(btnId) { return document.getElementById(btnId).className === 'on'; }
   [['ajBuilder', 'ajBuilderHint'], ['qiBuilder', 'qiBuilderHint']].forEach(function (p) {
-    document.getElementById(p[0]).onclick = function () { setBuilderToggle(p[0], p[1], !builderToggleOn(p[0])); };
+    document.getElementById(p[0]).onclick = function () {
+      setBuilderToggle(p[0], p[1], !builderToggleOn(p[0]));
+      if (p[0] === 'qiBuilder') syncQiEmail();
+    };
   });
+
+  // Quick invoice builder email: follows the name/address as they're typed
+  // until Jarid edits the wording himself.
+  var qiEmailEdited = false;
+  function qiEmailAddr() {
+    return [document.getElementById('qiAddress').value.trim(), document.getElementById('qiSuburb').value.trim()]
+      .filter(Boolean).join(', ');
+  }
+  function syncQiEmail() {
+    var on = builderToggleOn('qiBuilder') && !!state.builderEmail;
+    document.getElementById('qiEmail').style.display = on ? 'block' : 'none';
+    if (on && !qiEmailEdited) {
+      document.getElementById('qiEmailText').value =
+        builderEmailFor(document.getElementById('qiName').value.trim(), qiEmailAddr());
+    }
+  }
+  ['qiName', 'qiAddress', 'qiSuburb'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', syncQiEmail);
+  });
+  document.getElementById('qiEmailText').addEventListener('input', function () { qiEmailEdited = true; });
 
   document.getElementById('addJobBtn').onclick = function () {
     ajFromNote = null;
@@ -1217,6 +1257,9 @@
     ['qiName','qiPhone','qiEmail','qiSuburb','qiPostcode','qiAddress','qiAmount'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
+    qiEmailEdited = false;
+    document.getElementById('qiEmailSave').checked = false;
+    syncQiEmail();
     qi.lines = [{ t: '', a: null }];
     document.getElementById('qiAmtLabel').textContent = gstOn() ? 'Amount (ex GST)' : 'Invoice total';
     renderQiLines();
@@ -1241,15 +1284,25 @@
     if (!lines.length) { toast('Add at least one line describing the work.'); return; }
     var amount = Number(document.getElementById('qiAmount').value);
     if (!(amount > 0)) { toast('Enter the invoice total, or price every line.'); return; }
-    var btn = this;
-    btn.disabled = true;
-    btn.textContent = 'Building the invoice…';
-    api({
+    var payload = {
       action: 'quickInvoice', name: name, phone: phone, email: email, suburb: suburb, builder: builderToggleOn('qiBuilder'),
       postcode: document.getElementById('qiPostcode').value.trim(),
       address: document.getElementById('qiAddress').value.trim(),
       lines: lines, amount: grandTotal(amount)
-    }).then(function (res) {
+    };
+    if (payload.builder && state.builderEmail) {
+      var et = document.getElementById('qiEmailText').value.trim();
+      if (!et) { toast('The email to the builder is empty. Type a message first.'); return; }
+      payload.emailText = et;
+      if (document.getElementById('qiEmailSave').checked) {
+        payload.saveEmailText = builderEmailToTemplate(et, name, qiEmailAddr());
+        state.builderEmail = payload.saveEmailText;
+      }
+    }
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Building the invoice…';
+    api(payload).then(function (res) {
       btn.disabled = false;
       btn.textContent = 'Create and send invoice';
       if (!res.ok) { toast('Check the details and try again.'); return; }
@@ -1726,8 +1779,30 @@
   function exGst(a, isEx) { return (gstOn() && !isEx) ? Math.round(a / 1.1 * 100) / 100 : a; }
   function money2(n) { return '$' + Number(n).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+  // Builder invoice email: the saved wording with this job's name and address
+  // dropped in, so it reads naturally. Saving as the default turns them back
+  // into {name}/{address} so the next builder gets their own.
+  function builderEmailFor(name, address) {
+    var t = state.builderEmail || '';
+    if (name) t = t.split('{name}').join(name);
+    if (address) t = t.split('{address}').join(address);
+    return t;
+  }
+  function builderEmailToTemplate(text, name, address) {
+    var t = text;
+    if (address && address.length >= 4) t = t.split(address).join('{address}');
+    if (name && name.length >= 4) t = t.split(name).join('{name}');
+    return t;
+  }
+
   function openLineEditor(job, cardEl, mode) {
     le.job = job; le.el = cardEl; le.mode = mode;
+    le.emailOn = mode === 'invoice' && !!job.builder && !!state.builderEmail; // hidden until the server sends wording
+    le.emailAddr = [job.address, job.suburb].filter(Boolean).join(', ');
+    le.emailStart = builderEmailFor(job.name, le.emailAddr);
+    document.getElementById('leEmail').style.display = le.emailOn ? 'block' : 'none';
+    document.getElementById('leEmailText').value = le.emailStart;
+    document.getElementById('leEmailSave').checked = false;
     le.baseFee = feeFor(job);
     le.waived = !!job.travelWaived;
     le.fee = le.waived ? 0 : le.baseFee;
@@ -1824,6 +1899,7 @@
   document.getElementById('leWork').oninput = recomputeLines;
   document.getElementById('leAdd').onclick = function () { le.lines.push({ t: '', a: null }); renderLines(); };
   document.getElementById('leClose').onclick = function () { document.getElementById('lineEd').style.display = 'none'; };
+  document.getElementById('leEmailUndo').onclick = function () { document.getElementById('leEmailText').value = le.emailStart; };
   document.getElementById('leSave').onclick = function () {
     var lines = le.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null, x: gstOn() ? 1 : undefined }; })
       .filter(function (l) { return l.t; });
@@ -1852,6 +1928,15 @@
         };
       } else {
         set.smokeCert = null; // untick clears a previously saved cert
+      }
+      if (le.emailOn) {
+        var et = document.getElementById('leEmailText').value.trim();
+        if (!et) { toast('The email to the builder is empty. Type a message or tap Undo my changes.'); return; }
+        set.emailText = et;
+        if (document.getElementById('leEmailSave').checked) {
+          set.saveEmailText = builderEmailToTemplate(et, le.job.name, le.emailAddr);
+          state.builderEmail = set.saveEmailText;
+        }
       }
     }
     document.getElementById('lineEd').style.display = 'none';
