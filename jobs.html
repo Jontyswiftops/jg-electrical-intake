@@ -151,9 +151,9 @@
     </div>
     <div class="sf-card">
       <div class="sf-sub" style="margin-bottom:10px;">For phone and word-of-mouth clients who didn't use the form. They land at Contacted, then quote or book as usual.</div>
-      <input class="sf-input" id="ajName" type="text" maxlength="80" placeholder="Client name *" style="margin-top:0;">
-      <input class="sf-input" id="ajPhone" type="tel" maxlength="20" placeholder="Mobile *">
-      <input class="sf-input" id="ajEmail" type="email" maxlength="120" placeholder="Email (needed for quotes and invoices by email)">
+      <input class="sf-input" id="ajName" autocomplete="off" type="text" maxlength="80" placeholder="Client name *" style="margin-top:0;">
+      <input class="sf-input" id="ajPhone" autocomplete="off" type="tel" maxlength="20" placeholder="Mobile *">
+      <input class="sf-input" id="ajEmail" autocomplete="off" type="email" maxlength="120" placeholder="Email (needed for quotes and invoices by email)">
       <div style="display:flex;gap:8px;">
         <input class="sf-input" id="ajSuburb" type="text" maxlength="50" placeholder="Suburb *" style="flex:1;">
         <input class="sf-input" id="ajPostcode" type="text" inputmode="numeric" maxlength="4" placeholder="Postcode" style="flex:0 0 110px;">
@@ -181,9 +181,9 @@
     </div>
     <div class="sf-card">
       <div class="sf-sub" style="margin-bottom:10px;">Work already done? Bill it straight away. The job lands in Owed and is tracked like any other: payment reminders, Paid, receipt, cashbook and GST.</div>
-      <input class="sf-input" id="qiName" type="text" maxlength="80" placeholder="Client name *" style="margin-top:0;">
-      <input class="sf-input" id="qiPhone" type="tel" maxlength="20" placeholder="Mobile *">
-      <input class="sf-input" id="qiEmail" type="email" maxlength="120" placeholder="Email (the invoice is sent here)">
+      <input class="sf-input" id="qiName" autocomplete="off" type="text" maxlength="80" placeholder="Client name *" style="margin-top:0;">
+      <input class="sf-input" id="qiPhone" autocomplete="off" type="tel" maxlength="20" placeholder="Mobile *">
+      <input class="sf-input" id="qiEmail" autocomplete="off" type="email" maxlength="120" placeholder="Email (the invoice is sent here)">
       <div style="display:flex;gap:8px;">
         <input class="sf-input" id="qiSuburb" type="text" maxlength="50" placeholder="Suburb *" style="flex:1;">
         <input class="sf-input" id="qiPostcode" type="text" inputmode="numeric" maxlength="4" placeholder="Postcode" style="flex:0 0 110px;">
@@ -515,6 +515,7 @@
       state.fees = res.fees || null;
       state.builderEmail = res.builderEmail || '';
       state.builderQuoteEmail = res.builderQuoteEmail || '';
+      state.own = res.own || null; // also tells us the server can resend
       flushNoteQueue();
       var g = res.gst;
       state.gstMode = g.mode || '';
@@ -720,6 +721,12 @@
           send(job, el, { status: back }, 'Reopening — bringing the folder back too…');
         }
       }});
+    var rs = resendable(j);
+    if (rs)
+      A.push({ label: rs === 'quote' ? 'Resend quote' : 'Resend invoice', style:'secondary', run:function (job, el) {
+        if (!job.email) { toast('No email on this job. Tap Add email first.'); return; }
+        if (confirm('Send the ' + rs + ' again to ' + job.email + '?')) send(job, el, { resend: true }, 'Resending the ' + rs + '…');
+      }});
     A.push(promptAct('Note', 'secondary', 'Add a note', 'text', '', function (v) { return { noteAppend: v }; }));
     return A;
   }
@@ -783,7 +790,11 @@
     toast(busyMsg || 'Saving…', true);
     api({ action:'update', jobId: j.id, set: set }).then(function (res) {
       if (res.ok) {
-        toast(res.warning ? 'Saved — but an automation hiccuped, check the sheet.' : 'Done.');
+        toast(res.warning ? 'Saved — but an automation hiccuped, check the sheet.'
+          : res.resent === 'quote' ? 'Quote sent to the new email.'
+          : res.resent === 'invoice' ? 'Invoice sent to the new email.'
+          : res.resent === 'none' ? 'Saved, but there was no quote or invoice PDF to resend.'
+          : 'Done.');
         load();
       } else {
         el.classList.remove('busy');
@@ -797,13 +808,47 @@
     });
   }
 
+  // Jarid's own details landing on a client's job (his phone autofills them):
+  // warn before anything gets sent to himself.
+  function phoneKey(p) {
+    var d = String(p || '').replace(/[^0-9]/g, '');
+    if (d.indexOf('61') === 0 && d.length === 11) d = '0' + d.slice(2);
+    if (d.length === 9 && /^[23478]/.test(d)) d = '0' + d;
+    return d;
+  }
+  function ownOk(phone, email) {
+    var o = state.own;
+    if (!o) return true;
+    var hits = [];
+    if (phone && o.phone && phoneKey(phone) === o.phone) hits.push('mobile number');
+    if (email && (o.emails || []).indexOf(String(email).trim().toLowerCase()) !== -1) hits.push('email');
+    if (!hits.length) return true;
+    return confirm('That ' + hits.join(' and ') + (hits.length > 1 ? ' are' : ' is') + ' yours, not the client\'s. Your phone may have filled it in for you.\n\n' +
+      'Cancel to fix it, or OK to keep it anyway.');
+  }
+
+  // What a fixed email can resend: the quote while Quoted, the invoice while Invoiced.
+  function resendable(j) {
+    if (!state.own) return ''; // older server can't resend
+    if (j.status === 'Quoted' && j.quoteSent) return 'quote';
+    if (j.status === 'Invoiced' && j.invoiceNo) return 'invoice';
+    return '';
+  }
+
   function openFixEmail(j, el) {
     openModal('Fix email — ' + j.name, 'email', j.email || '', function (v) {
       if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
         toast('That email doesn\'t look right — check it and try again.');
         return;
       }
-      send(j, el, { email: v }, 'Updating their email…');
+      if (!ownOk('', v)) return;
+      var set = { email: v };
+      var doc = resendable(j);
+      if (doc && v && v.toLowerCase() !== String(j.email || '').toLowerCase() &&
+          confirm('Email updated. Send the ' + doc + ' to ' + v + ' now?')) {
+        set.resend = true;
+      }
+      send(j, el, set, set.resend ? 'Updating their email and resending the ' + doc + '…' : 'Updating their email…');
     });
   }
 
@@ -1163,6 +1208,7 @@
       toast('Name, mobile and suburb are needed.');
       return;
     }
+    if (!ownOk(phone, document.getElementById('ajEmail').value)) return;
     var btn = this;
     btn.disabled = true;
     btn.textContent = 'Adding…';
@@ -1280,6 +1326,7 @@
       toast('That email doesn\'t look right. Check it, or leave it blank.');
       return;
     }
+    if (!ownOk(phone, email)) return;
     var lines = qi.lines.map(function (l) { return { t: l.t.trim(), a: (l.a != null && l.a > 0) ? l.a : null, x: gstOn() ? 1 : undefined }; })
       .filter(function (l) { return l.t; });
     if (!lines.length) { toast('Add at least one line describing the work.'); return; }
