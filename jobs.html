@@ -382,7 +382,8 @@
     </div>
     <div class="sf-card" id="leSmoke" style="display:none;">
       <h3>Smoke alarms</h3>
-      <div class="sf-sub">If this invoice includes smoke alarm work, tick it here. A compliance certificate preps now but only goes to the client with their receipt, after they've paid.</div>
+      <div class="sf-sub">If this invoice includes smoke alarm work, tick it here. The compliance certificate is made and emailed with their receipt once they've paid.</div>
+      <div class="sf-sub" id="lsAuto" style="display:none;color:#1e6b34;font-weight:600;margin-top:6px;">Picked up smoke alarms in your lines. Check the number and type.</div>
       <div class="sf-tier" style="margin-top:10px;">
         <button type="button" id="lsNo" class="on">No smoke alarm work</button>
         <button type="button" id="lsYes">Smoke alarms on this job</button>
@@ -2016,8 +2017,21 @@
     document.getElementById('lsT2').className = key === 'h' ? 'on' : '';
     document.getElementById('lsT3').className = key === 'm' ? 'on' : '';
   }
-  document.getElementById('lsNo').onclick = function () { setLsOn(false); };
-  document.getElementById('lsYes').onclick = function () { setLsOn(true); };
+  var lsTouched = false;
+  document.getElementById('lsNo').onclick = function () { lsTouched = true; setLsOn(false); document.getElementById('lsAuto').style.display = 'none'; };
+  document.getElementById('lsYes').onclick = function () { lsTouched = true; setLsOn(true); };
+  // A line like "Supply wire and install 7x clipsal smoke alarms" ticks the smoke
+  // alarm section for him, so the certificate isn't missed. He can still untick it.
+  function smokeSniff() {
+    if (le.mode !== 'invoice' || lsTouched || lsOn) return;
+    var txt = le.lines.map(function (l) { return l.t || ''; }).join(' ; ');
+    if (!/smoke/i.test(txt)) return;
+    setLsOn(true);
+    document.getElementById('lsAuto').style.display = 'block';
+    var m = /(\d+)\s*x?\s*(?:[a-z0-9]+\s+){0,3}smoke/i.exec(txt) || /smoke alarms?\D{0,12}(\d+)/i.exec(txt);
+    if (m && !document.getElementById('lsN').value) document.getElementById('lsN').value = Math.min(30, Number(m[1]));
+    if (/hard\s*-?wired|240\s*v|\bwire\b/i.test(txt)) setLsSetup('h');
+  }
   document.getElementById('lsT1').onclick = function () { setLsSetup('w'); };
   document.getElementById('lsT2').onclick = function () { setLsSetup('h'); };
   document.getElementById('lsT3').onclick = function () { setLsSetup('m'); };
@@ -2090,8 +2104,11 @@
       document.getElementById('lsN').value = sc && sc.n ? sc.n : '';
       document.getElementById('lsLocs').value = sc && sc.locs ? sc.locs : '';
       document.getElementById('lsDate').value = (sc && sc.date) ? sc.date : localTodayISO();
+      lsTouched = !!(sc && sc.n);
+      document.getElementById('lsAuto').style.display = 'none';
     }
     renderLines();
+    if (mode === 'invoice') smokeSniff();
     document.getElementById('lineEd').style.display = 'block';
     document.getElementById('lineEd').scrollTop = 0;
   }
@@ -2106,6 +2123,7 @@
       t.className = 'le-t'; t.type = 'text'; t.maxLength = 120;
       t.placeholder = 'e.g. 2 x power points'; t.value = l.t;
       t.oninput = function () { l.t = t.value; };
+      t.onchange = smokeSniff;
       var a = document.createElement('input');
       a.className = 'le-a'; a.type = 'number'; a.min = '0';
       a.placeholder = '$ optional'; a.value = l.a != null ? l.a : '';
@@ -2597,6 +2615,12 @@
     var d = tc.d;
     var body = document.getElementById('tcBody');
     body.innerHTML = '';
+    if (!String(d.signer.licence || '').trim()) {
+      // Licence on file in Settings (WorkerLicenceNo), else the one last used on this phone
+      var onFile = (state.worker && state.worker.licence) || '';
+      if (!onFile) { try { onFile = (JSON.parse(localStorage.getItem('jb_tc_signer') || '{}') || {}).licence || ''; } catch (e) {} }
+      d.signer.licence = onFile;
+    }
     var build = d.mode === 'build';
 
     // 0. Job details
@@ -2792,7 +2816,7 @@
       cv.width = Math.max(300, Math.round(r.width * 2)); cv.height = Math.round(140 * 2);
       ctx = cv.getContext('2d');
       ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#14213d';
-      if (tc.sig) { var im = new Image(); im.onload = function () { ctx.drawImage(im, 0, 0, cv.width, cv.height); }; im.src = tc.sig; }
+      if (tc && tc.sig) { var im = new Image(); im.onload = function () { ctx.drawImage(im, 0, 0, cv.width, cv.height); }; im.src = tc.sig; }
     }
     setTimeout(size, 0);
     function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height }; }
