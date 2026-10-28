@@ -2410,7 +2410,10 @@
   // ── Test & compliance ──────────────────────────────────────────────────────
   var TC_KEY = 'jb_tc_drafts';
   var TC_EARTH = 0.5, TC_IR = 1, TC_VPN = [216, 253], TC_VPP = [376, 440];
-  var TC_RPHE = { '10|1.5': 2.0, '16|2.5': 1.2, '20|2.5': 1.0 };
+  // Earthing quick-add buttons. Ones Jarid adds with "+ Other…" are kept on the phone for next time.
+  var TC_EARTH_ITEMS = ['Power', 'Lights', 'Air con', 'Hot water', 'Wall oven', 'Hotplate', 'Pool', 'Construction frame'];
+  function tcEarthSaved() { try { return JSON.parse(localStorage.getItem('jb_tc_earth') || '[]'); } catch (e) { return []; } }
+  function tcEarthSave(list) { try { localStorage.setItem('jb_tc_earth', JSON.stringify(list)); } catch (e) {} }
   var TC_ZSC = { 10: 3.1, 16: 1.9, 20: 1.5 };
   var TC_VIS = [
     ['general', 'General', 'Basic and fault protection, hazardous parts, spread of fire, condition of equipment'],
@@ -2444,14 +2447,12 @@
     var m = { B: 4, C: 7.5, D: 12.5 }[curve] || 7.5;
     return Math.round(230 / (m * amps) * 100) / 100;
   }
-  function rpheTable(c) { return c.curve === 'C' ? (TC_RPHE[c.amps + '|' + c.cable] || null) : null; }
-  function rpheLim(c) { return rpheTable(c) || tnum(c.rpheLimit); }
   function rcdMax() { return (state.worker && state.worker.rcdMs) || 40; }
 
   function newCircuit(kind) {
     return { board: 'Main board', name: '', kind: kind || 'power', amps: kind === 'light' ? 10 : 16, curve: 'C',
       cable: kind === 'light' ? '1.5' : '2.5', rcd: true, ir: '', polarity: false, connections: false,
-      rphe: '', rpheLimit: '', zs: '', rcdMs: '' };
+      zs: '', rcdMs: '', volts: '' };
   }
   function newTestData(job) {
     var w = state.worker || {};
@@ -2461,7 +2462,7 @@
       site: { address: job ? (job.address || '') : '', suburb: job ? (job.suburb || '') : '' },
       work: job ? (job.workDesc || job.description || '') : '',
       testDate: localTodayISO(),
-      sow: { pcName: '', procedures: false, jsa: false, isolated: false, lockedOut: false, testedDead: false },
+      sow: { procedures: false, jsa: false, isolated: false, lockedOut: false, testedDead: false },
       visual: { general: { res: '', note: '' }, mains: { res: '', note: '' }, boards: { res: '', note: '' }, wiring: { res: '', note: '' }, equipment: { res: '', note: '' } },
       inspectedBy: '', rooms: [],
       earth: { main: '', board: '', bonding: '', largestPE: '', others: [] },
@@ -2469,7 +2470,7 @@
       mains: { men: false, v: { an: '', ae: '', ne: '', bn: '', cn: '', be: '', ce: '', ab: '', ac: '', bc: '' } },
       rcd: { button: false, correctCircuit: false },
       signer: { name: w.name || 'Jarid Gattera', licence: w.licence || '' },
-      emailTo: job ? (job.email || '') : '', emailTo2: '', sendEmail: !!(job && job.email)
+      emailTo2: '', sendEmail: true
     };
   }
 
@@ -2488,6 +2489,7 @@
     var all = tcDrafts();
     if (!all[id]) return;
     tc = { id: id, d: all[id].d, sig: all[id].sig || '' };
+    if (!tc.d.client.email && tc.d.emailTo) tc.d.client.email = tc.d.emailTo; // drafts from before the single email field
     document.getElementById('tcTitle').textContent = 'Test: ' + (tc.d.client.name || 'new job');
     document.getElementById('tcProblems').style.display = 'none';
     renderTc();
@@ -2597,7 +2599,7 @@
     // 0. Job details
     var c0 = tcCard('Job details', d.jobId ? 'Linked to ' + esc(d.jobId) + '. The PDFs save into its folder.' : 'Standalone test. The PDFs save into 06 Certificates.');
     c0.appendChild(tcInput(d.client, 'name', 'Customer name *'));
-    c0.appendChild(tcInput(d.client, 'email', 'Customer email (for the certificate)', 'email'));
+    c0.appendChild(tcInput(d.client, 'email', 'Customer email (the certificate goes here)', 'email'));
     c0.appendChild(tcInput(d.site, 'address', 'Site address *'));
     c0.appendChild(tcInput(d.site, 'suburb', 'Suburb'));
     var work = document.createElement('textarea');
@@ -2613,7 +2615,6 @@
 
     // 1. Safe system of work
     var c1 = tcCard('1. Safe system of work', 'Use the right PPE for all testing.');
-    c1.appendChild(tcInput(d.sow, 'pcName', 'Permission from (builder / owner / person in control) *'));
     TC_SOW.forEach(function (s) { c1.appendChild(tcCheck(d.sow, s[0], s[1])); });
     body.appendChild(c1);
 
@@ -2652,7 +2653,7 @@
     body.appendChild(c2);
 
     // 3. Earth continuity
-    var c3 = tcCard('3. Earth continuity', 'Max ' + TC_EARTH + ' Ω. Leave bonding blank if there is none.');
+    var c3 = tcCard('3. Earth continuity', 'Max ' + TC_EARTH + ' Ω. Leave bonding blank if there is none. Tap a button to add an earth reading.');
     var eRule = function () { return { max: TC_EARTH }; };
     c3.appendChild(tcReading(d.earth, 'main', 'Main earth *', 'Disconnect and test to the earth rod', eRule, 'Ω'));
     c3.appendChild(tcReading(d.earth, 'board', 'Switchboard earth' + (build ? ' *' : ''), 'MEN disconnected, same size as main earth', eRule, 'Ω'));
@@ -2664,16 +2665,34 @@
       r.appendChild(x);
       c3.appendChild(r);
     });
-    ['Air con', 'Hot water', 'Wall oven', 'Hotplate', 'Pool', 'Construction frame', '+ Other'].forEach(function (nm) {
-      var b = h('button', 'tc-add', '+ ' + esc(nm.replace('+ ', ''))); b.type = 'button';
-      b.onclick = function () { d.earth.others.push({ name: nm === '+ Other' ? 'Bonded item' : nm, val: '' }); tcChanged(); renderTc(); };
+    var addEarth = function (nm) { d.earth.others.push({ name: nm, val: '' }); tcChanged(); renderTc(); };
+    TC_EARTH_ITEMS.concat(tcEarthSaved()).forEach(function (nm, i) {
+      var b = h('button', 'tc-add', '+ ' + esc(nm)); b.type = 'button';
+      b.onclick = function () { addEarth(nm); };
+      if (i >= TC_EARTH_ITEMS.length) {
+        var x = h('span', '', ' ×'); x.style.color = '#a01c15'; x.style.paddingLeft = '4px';
+        x.onclick = function (ev) {
+          ev.stopPropagation();
+          if (confirm('Remove "' + nm + '" from your earthing buttons?')) { tcEarthSave(tcEarthSaved().filter(function (n) { return n !== nm; })); renderTc(); }
+        };
+        b.appendChild(x);
+      }
       c3.appendChild(b);
     });
+    var bo = h('button', 'tc-add', '+ Other…'); bo.type = 'button';
+    bo.onclick = function () {
+      var nm = (prompt('What are you earth testing? e.g. Garage power, Shed, Solar frame') || '').trim().slice(0, 40);
+      if (!nm) return;
+      var saved = tcEarthSaved();
+      if (TC_EARTH_ITEMS.indexOf(nm) === -1 && saved.indexOf(nm) === -1) tcEarthSave(saved.concat([nm]).slice(-12));
+      addEarth(nm);
+    };
+    c3.appendChild(bo);
     c3.appendChild(tcReading(d.earth, 'largestPE', 'Protective earths: largest reading', 'Table 8.2, all points tested (record)', null, 'Ω'));
     body.appendChild(c3);
 
     // 4. Circuits
-    var c4 = tcCard('4. Circuits', 'One card per circuit. Limits fill in from the breaker: IR min ' + TC_IR + ' MΩ, R phe Table 8.2, Zs Table 8.1, RCD max ' + rcdMax() + ' ms.');
+    var c4 = tcCard('4. Circuits', 'One card per circuit. IR min ' + TC_IR + ' MΩ. Zs (Table 8.1) and RCD trip time are optional, but checked against their limit if you enter them.');
     d.circuits.forEach(function (c, i) {
       var box = h('div', 'tc-circ');
       var head = h('div', 'tc-ch');
@@ -2687,8 +2706,8 @@
       if (build) box.appendChild(tcInput(c, 'board', 'Board, e.g. Main board, Sub-board garage'));
       box.appendChild(tcInput(c, 'name', 'Circuit name, e.g. EV charger, Lights 1, Power kitchen *'));
       var sel = h('div', 'tc-sel');
-      var refreshLimits = function () { rphe.refresh(); zs.refresh(); limitRow.style.display = rpheTable(c) ? 'none' : 'flex'; zsNote.textContent = 'Zs limit ' + (zsLim(Number(c.amps), c.curve) || '-') + ' Ω'; tcChanged(); };
-      sel.appendChild(tcSelect([['light', 'Lights'], ['power', 'Power'], ['other', 'Other']], c.kind, function (v) { c.kind = v; tcChanged(); }));
+      var refreshLimits = function () { zs.refresh(); zsNote.textContent = 'Zs limit ' + (zsLim(Number(c.amps), c.curve) || '-') + ' Ω'; tcChanged(); };
+      sel.appendChild(tcSelect([['light', 'Lights'], ['power', 'Power'], ['other', 'Other']], c.kind, function (v) { c.kind = v; tcChanged(); renderTc(); }));
       sel.appendChild(tcSelect(TC_AMPS.map(function (a) { return [a, a ? a + ' A' : 'Breaker']; }), c.amps, function (v) { c.amps = Number(v) || ''; refreshLimits(); }));
       sel.appendChild(tcSelect([['B', 'B curve'], ['C', 'C curve'], ['D', 'D curve']], c.curve, function (v) { c.curve = v; refreshLimits(); }));
       sel.appendChild(tcSelect(TC_CABLES.map(function (x) { return [x, x + ' mm²']; }), c.cable, function (v) { c.cable = v; refreshLimits(); }));
@@ -2697,23 +2716,15 @@
       box.appendChild(tcReading(c, 'ir', 'Insulation resistance *', 'Min ' + TC_IR + ' MΩ', function () { return { min: TC_IR }; }, 'MΩ'));
       box.appendChild(tcCheck(c, 'polarity', 'Polarity correct (actives switched, neutrals not)'));
       box.appendChild(tcCheck(c, 'connections', 'Correct circuit connections (no interconnection)'));
-      var limitRow = h('div', 'tc-r');
-      limitRow.appendChild(h('div', 'tl', 'R phe limit from Table 8.2<small>No table value for this breaker and cable, so enter it</small>'));
-      var li = document.createElement('input'); li.inputMode = 'decimal'; li.placeholder = 'Ω'; li.value = c.rpheLimit || '';
-      li.oninput = function () { c.rpheLimit = li.value; rphe.refresh(); tcChanged(); };
-      limitRow.appendChild(li);
-      limitRow.style.display = rpheTable(c) ? 'none' : 'flex';
-      box.appendChild(limitRow);
-      var rphe = tcReading(c, 'rphe', 'Fault loop resistance R phe *', 'Furthest point', function () { var l = rpheLim(c); return l ? { max: l } : { max: -1 }; }, 'Ω');
-      box.appendChild(rphe);
-      var zs = tcReading(c, 'zs', 'Fault loop impedance Zs *', 'After energising, furthest point', function () { var l = zsLim(Number(c.amps), c.curve); return l ? { max: l } : { max: -1 }; }, 'Ω');
+      var zs = tcReading(c, 'zs', 'Fault loop impedance Zs', 'Optional · after energising, furthest point', function () { var l = zsLim(Number(c.amps), c.curve); return l ? { max: l } : { max: -1 }; }, 'Ω');
       var zsNote = h('div', 'sf-sub', 'Zs limit ' + (zsLim(Number(c.amps), c.curve) || '-') + ' Ω');
       box.appendChild(zs);
       box.appendChild(zsNote);
-      var rcdRow = tcReading(c, 'rcdMs', 'RCD trip time', 'Max ' + rcdMax() + ' ms', function () { return { max: rcdMax() }; }, 'ms');
+      var rcdRow = tcReading(c, 'rcdMs', 'RCD trip time', 'Optional · max ' + rcdMax() + ' ms', function () { return { max: rcdMax() }; }, 'ms');
       rcdRow.style.display = c.rcd ? 'flex' : 'none';
       box.appendChild(rcdRow);
       box.querySelector('input[type=checkbox]').addEventListener('change', function () { rcdRow.style.display = c.rcd ? 'flex' : 'none'; });
+      if (c.kind === 'other') box.appendChild(tcReading(c, 'volts', 'Voltage at the circuit', 'Optional · record, e.g. at the EV charger', null, 'V'));
       c4.appendChild(box);
     });
     var addRow = h('div', 'row');
@@ -2759,8 +2770,7 @@
     c7.appendChild(cv);
     var clr = h('button', 'tc-x', 'Clear signature'); clr.type = 'button';
     c7.appendChild(clr);
-    c7.appendChild(tcCheck(d, 'sendEmail', 'Email the certificate and test record now'));
-    c7.appendChild(tcInput(d, 'emailTo', 'Send to (owner)', 'email'));
+    c7.appendChild(tcCheck(d, 'sendEmail', 'Email the certificate and test record to the customer email at the top'));
     c7.appendChild(tcInput(d, 'emailTo2', 'Also send to (builder, optional)', 'email'));
     body.appendChild(c7);
     setupSignature(cv, clr);
@@ -2808,14 +2818,13 @@
     need(d.client.name.trim(), 'Customer name');
     need(d.site.address.trim(), 'Site address');
     need(String(d.work || '').trim(), 'Description of the work');
-    need(d.sow.pcName.trim(), 'Safe system of work: who gave permission');
     need(d.sow.procedures && d.sow.jsa && d.sow.isolated && d.sow.lockedOut && d.sow.testedDead, 'Safe system of work: tick every step');
     TC_VIS.forEach(function (v) { need(d.visual[v[0]].res, 'Visual inspection: ' + v[1] + ' (Pass or N/A)'); });
     d.rooms.forEach(function (r) { need(r.ok, 'Room check: ' + r.name); });
     under(d.earth.main, TC_EARTH, 'Main earth', true);
     under(d.earth.board, TC_EARTH, 'Switchboard earth', d.mode === 'build');
     under(d.earth.bonding, TC_EARTH, 'Equipotential bonding', false);
-    d.earth.others.forEach(function (o) { under(o.val, TC_EARTH, 'Bonding: ' + o.name, true); });
+    d.earth.others.forEach(function (o) { under(o.val, TC_EARTH, 'Earth: ' + o.name, true); });
     need(d.circuits.length, 'Add at least one circuit');
     d.circuits.forEach(function (c, i) {
       var label = c.name || 'Circuit ' + (i + 1);
@@ -2826,11 +2835,8 @@
       else if (ir < TC_IR) p.push(label + ' insulation resistance: ' + c.ir + ' is under ' + TC_IR + ' MΩ');
       need(c.polarity, label + ': polarity');
       need(c.connections, label + ': correct circuit connections');
-      var rl = rpheLim(c);
-      if (!rl) p.push(label + ': enter the Table 8.2 limit for fault loop resistance');
-      else under(c.rphe, rl, label + ' fault loop resistance', true);
-      if (c.amps) under(c.zs, zsLim(Number(c.amps), c.curve), label + ' fault loop impedance', true);
-      if (c.rcd) under(c.rcdMs, rcdMax(), label + ' RCD trip time', true);
+      if (c.amps) under(c.zs, zsLim(Number(c.amps), c.curve), label + ' fault loop impedance', false);
+      if (c.rcd) under(c.rcdMs, rcdMax(), label + ' RCD trip time', false);
     });
     need(d.mains.men, 'MEN link reconnected');
     volts(d.mains.v.an, TC_VPN, 'Supply volts A-N');
@@ -2843,8 +2849,8 @@
     need(d.signer.name.trim() && d.signer.licence.trim(), 'Electrician name and licence number');
     need(tc && tc.sig, 'Signature');
     if (d.sendEmail) {
-      var e1 = cleanEmailInput(d.emailTo), e2 = cleanEmailInput(d.emailTo2);
-      need(e1 && EMAIL_OK.test(e1), 'Email to send the certificate to');
+      var e1 = cleanEmailInput(d.client.email), e2 = cleanEmailInput(d.emailTo2);
+      need(e1 && EMAIL_OK.test(e1), 'Customer email at the top (or untick Email the certificate)');
       need(!e2 || EMAIL_OK.test(e2), 'Second email doesn\'t look right');
     }
     return p;
@@ -2872,7 +2878,7 @@
     var btn = this;
     btn.disabled = true; btn.textContent = 'Building the certificate…';
     tcSaveNow();
-    var to = tc.d.sendEmail ? [cleanEmailInput(tc.d.emailTo), cleanEmailInput(tc.d.emailTo2)].filter(Boolean) : [];
+    var to = tc.d.sendEmail ? [cleanEmailInput(tc.d.client.email), cleanEmailInput(tc.d.emailTo2)].filter(Boolean) : [];
     toast('Building the certificate and test record. This takes about 20 seconds…', true);
     api({ action: 'testSave', data: tc.d, signature: tc.sig, emailTo: to }).then(function (res) {
       btn.disabled = false; btn.textContent = 'Create certificate';
@@ -2933,10 +2939,23 @@
         var row = h('div', 'row');
         if (it.certUrl) row.appendChild(btnLink('Certificate', it.certUrl, true));
         if (it.recordUrl) row.appendChild(btnLink('Test record', it.recordUrl, true));
+        var em = btnLink('Email to owner', '#', false);
+        em.onclick = function (ev) { ev.preventDefault(); emailCert(it); };
+        row.appendChild(em);
         el.appendChild(row);
         list.appendChild(el);
       });
     }).catch(function () { list.innerHTML = '<div class="sf-sub">No connection.</div>'; });
+  }
+  function emailCert(it) {
+    var to = cleanEmailInput(prompt('Email ' + it.certNo + ' (certificate and test record) to:', it.email || '') || '');
+    if (!to) return;
+    if (!EMAIL_OK.test(to)) { toast('That email doesn\'t look right.'); return; }
+    toast('Sending ' + it.certNo + '…', true);
+    api({ action: 'testEmail', certNo: it.certNo, to: to }).then(function (res) {
+      toast(res.ok ? it.certNo + ' emailed to ' + to + '.' : res.error === 'bad_action' ? 'Needs the latest script update.' : 'Didn\'t send, try again.');
+      if (res.ok) renderTests();
+    }).catch(function () { toast('No connection, try again.'); });
   }
   document.getElementById('tcStandalone').onclick = function () { openTest(null); };
   document.getElementById('tcForJob').onclick = function () {
