@@ -2456,6 +2456,8 @@
   }
   function newTestData(job) {
     var w = state.worker || {};
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem('jb_tc_signer') || '{}') || {}; } catch (e) {}
     return {
       jobId: job ? job.id : '', mode: 'small', phase: '1',
       client: { name: job ? job.name : '', email: job ? (job.email || '') : '' },
@@ -2469,7 +2471,8 @@
       circuits: [newCircuit('power')],
       mains: { men: false, v: { an: '', ae: '', ne: '', bn: '', cn: '', be: '', ce: '', ab: '', ac: '', bc: '' } },
       rcd: { button: false, correctCircuit: false },
-      signer: { name: w.name || 'Jarid Gattera', licence: w.licence || '' },
+      signer: { name: saved.name || w.name || 'Jarid Gattera', licence: saved.licence || w.licence || '' },
+      checks: { polarity: false, connections: false },
       emailTo2: '', sendEmail: true
     };
   }
@@ -2688,7 +2691,6 @@
       addEarth(nm);
     };
     c3.appendChild(bo);
-    c3.appendChild(tcReading(d.earth, 'largestPE', 'Protective earths: largest reading', 'Table 8.2, all points tested (record)', null, 'Ω'));
     body.appendChild(c3);
 
     // 4. Circuits
@@ -2712,19 +2714,15 @@
       sel.appendChild(tcSelect([['B', 'B curve'], ['C', 'C curve'], ['D', 'D curve']], c.curve, function (v) { c.curve = v; refreshLimits(); }));
       sel.appendChild(tcSelect(TC_CABLES.map(function (x) { return [x, x + ' mm²']; }), c.cable, function (v) { c.cable = v; refreshLimits(); }));
       box.appendChild(sel);
-      box.appendChild(tcCheck(c, 'rcd', 'RCD / RCBO protected'));
+      c.rcd = true; // every circuit is RCD protected now, so no tick box
       box.appendChild(tcReading(c, 'ir', 'Insulation resistance *', 'Min ' + TC_IR + ' MΩ', function () { return { min: TC_IR }; }, 'MΩ'));
-      box.appendChild(tcCheck(c, 'polarity', 'Polarity correct (actives switched, neutrals not)'));
-      box.appendChild(tcCheck(c, 'connections', 'Correct circuit connections (no interconnection)'));
       var zs = tcReading(c, 'zs', 'Fault loop impedance Zs', 'Optional · after energising, furthest point', function () { var l = zsLim(Number(c.amps), c.curve); return l ? { max: l } : { max: -1 }; }, 'Ω');
       var zsNote = h('div', 'sf-sub', 'Zs limit ' + (zsLim(Number(c.amps), c.curve) || '-') + ' Ω');
       box.appendChild(zs);
       box.appendChild(zsNote);
       var rcdRow = tcReading(c, 'rcdMs', 'RCD trip time', 'Optional · max ' + rcdMax() + ' ms', function () { return { max: rcdMax() }; }, 'ms');
-      rcdRow.style.display = c.rcd ? 'flex' : 'none';
       box.appendChild(rcdRow);
-      box.querySelector('input[type=checkbox]').addEventListener('change', function () { rcdRow.style.display = c.rcd ? 'flex' : 'none'; });
-      if (c.kind === 'other') box.appendChild(tcReading(c, 'volts', 'Voltage at the circuit', 'Optional · record, e.g. at the EV charger', null, 'V'));
+      box.appendChild(tcReading(c, 'volts', 'Voltage at the circuit', 'Optional · record', null, 'V'));
       c4.appendChild(box);
     });
     var addRow = h('div', 'row');
@@ -2736,8 +2734,15 @@
     c4.appendChild(addRow);
     body.appendChild(c4);
 
-    // 5. Mains
-    var c5 = tcCard('5. Reconnect MEN, energise, supply volts', 'Main service supply volts at links and mains polarity.');
+    // 5. Polarity and connections, once for all circuits
+    if (!d.checks) d.checks = { polarity: false, connections: false };
+    var c4b = tcCard('5. Polarity and connections', 'Covers every circuit above.');
+    c4b.appendChild(tcCheck(d.checks, 'polarity', 'Polarity correct (actives switched, neutrals not)'));
+    c4b.appendChild(tcCheck(d.checks, 'connections', 'Correct circuit connections (no interconnection)'));
+    body.appendChild(c4b);
+
+    // 6. Mains
+    var c5 = tcCard('6. Reconnect MEN, energise, supply volts', 'Main service supply volts at links and mains polarity.');
     c5.appendChild(tcCheck(d.mains, 'men', 'MEN link reconnected, installation energised *'));
     var pn = function () { return { range: TC_VPN }; }, pp = function () { return { range: TC_VPP }; };
     c5.appendChild(tcReading(d.mains.v, 'an', 'A-N *', TC_VPN.join('-') + ' V', pn, 'V'));
@@ -2754,16 +2759,19 @@
     }
     body.appendChild(c5);
 
-    // 6. RCD
-    var c6 = tcCard('6. RCD tests', 'Trip times are entered on each circuit above.');
+    // 7. RCD
+    var c6 = tcCard('7. RCD tests', 'Trip times are entered on each circuit above.');
     c6.appendChild(tcCheck(d.rcd, 'button', 'Test button operates the RCD'));
     c6.appendChild(tcCheck(d.rcd, 'correctCircuit', 'Trips the correct circuit, and only that circuit'));
     body.appendChild(c6);
 
-    // 7. Sign off
-    var c7 = tcCard('7. Sign off', 'Your name and licence go on the certificate.');
+    // 8. Sign off
+    var c7 = tcCard('8. Sign off', 'Your name and licence go on the certificate. Both are remembered on this phone.');
     c7.appendChild(tcInput(d.signer, 'name', 'Electrician name *'));
     c7.appendChild(tcInput(d.signer, 'licence', 'Electrician licence number *'));
+    [].forEach.call(c7.querySelectorAll('input.sf-input'), function (i) {
+      i.addEventListener('change', function () { try { localStorage.setItem('jb_tc_signer', JSON.stringify(d.signer)); } catch (e) {} });
+    });
     c7.appendChild(h('div', 'sf-sub', 'Sign in the box with your finger.'));
     var cv = document.createElement('canvas');
     cv.id = 'tcSig';
@@ -2833,11 +2841,11 @@
       var ir = tnum(c.ir);
       if (ir === null) p.push(label + ' insulation resistance: reading missing');
       else if (ir < TC_IR) p.push(label + ' insulation resistance: ' + c.ir + ' is under ' + TC_IR + ' MΩ');
-      need(c.polarity, label + ': polarity');
-      need(c.connections, label + ': correct circuit connections');
       if (c.amps) under(c.zs, zsLim(Number(c.amps), c.curve), label + ' fault loop impedance', false);
       if (c.rcd) under(c.rcdMs, rcdMax(), label + ' RCD trip time', false);
     });
+    need(d.checks && d.checks.polarity, 'Polarity correct tick (section 5)');
+    need(d.checks && d.checks.connections, 'Correct circuit connections tick (section 5)');
     need(d.mains.men, 'MEN link reconnected');
     volts(d.mains.v.an, TC_VPN, 'Supply volts A-N');
     volts(d.mains.v.ae, TC_VPN, 'Supply volts A-E');
