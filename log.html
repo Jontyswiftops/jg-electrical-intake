@@ -110,6 +110,7 @@
 </div>
 
 <div class="wrap" id="app" style="display:none;">
+  <a href="jobs.html#home" style="display:inline-block;margin:4px 0 0;padding:7px 11px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--navy);font-weight:700;font-size:14px;text-decoration:none;">&#8249; Menu</a>
   <h1>Expenses &amp; reminders</h1>
   <div class="tabs">
     <button type="button" id="tabExpense" class="on">Expenses</button>
@@ -284,6 +285,9 @@
     document.getElementById('login').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     loadMissing();
+    // Opened from the menu's Money or Reminders tile.
+    var startTab = (location.hash || '').slice(1);
+    if (startTab === 'money' || startTab === 'reminders') showTab(startTab);
   }
   function authFailed() {
     localStorage.removeItem('jb_pw');

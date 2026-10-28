@@ -99,6 +99,53 @@
   .np-thumb img { width:100%; height:100%; object-fit:cover; }
   .np-thumb button { position:absolute; top:2px; right:2px; width:22px; height:22px; border-radius:50%; border:0; background:rgba(32,33,36,.75); color:#fff; font-size:14px; line-height:1; cursor:pointer; padding:0; }
   .hdr-btns { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  /* home menu */
+  .home-top { display:flex; align-items:center; gap:10px; padding:6px 2px 12px; }
+  .home-top img { width:44px; height:44px; flex:none; }
+  .home-top h1 { font-size:20px; }
+  .home-top .sub { font-size:12.5px; color:#5f6368; margin-top:2px; }
+  .search { position:relative; margin-bottom:12px; }
+  .search input { width:100%; font-size:16px; padding:13px 14px 13px 40px; border:1px solid var(--border); border-radius:12px; background:#fff; font-family:inherit; -webkit-appearance:none; }
+  .search span { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#9aa0a6; font-size:15px; }
+  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tile { background:#fff; border:1px solid var(--border); border-radius:14px; padding:13px 12px; text-align:left; cursor:pointer; min-height:96px; display:flex; flex-direction:column; justify-content:flex-start; font-family:inherit; color:inherit; text-decoration:none; }
+  .tile .ti { font-size:22px; line-height:1; }
+  .tile .tt { font-size:15px; font-weight:800; color:var(--navy); margin-top:8px; }
+  .tile .tb { font-size:12.5px; color:#5f6368; margin-top:3px; line-height:1.35; }
+  .tile .tb b { color:var(--err); }
+  .tile.hero { grid-column:1 / -1; min-height:0; flex-direction:row; align-items:center; gap:12px; border-left:5px solid var(--amber); }
+  .tile.hero .tt { margin-top:0; font-size:17px; }
+  .back { border:1px solid var(--border); background:#fff; border-radius:8px; padding:8px 11px; font-size:14px; font-weight:700; color:var(--navy); cursor:pointer; margin-right:10px; flex:none; }
+  .title-row { display:flex; align-items:center; }
+  .sr { background:#fff; border:1px solid var(--border); border-radius:12px; padding:13px; margin-bottom:9px; }
+  .sr .jobs { font-size:12.5px; color:#5f6368; margin-top:7px; line-height:1.5; }
+  .tag { display:inline-block; font-size:11px; font-weight:800; padding:2px 8px; border-radius:9px; background:#d0e0e3; color:#205064; margin-left:6px; vertical-align:middle; }
+  .pj { background:#fff; border:1px solid var(--border); border-radius:12px; padding:12px 13px; margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .pj b { color:var(--navy); }
+  /* test & compliance */
+  .tc-r { display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .tc-r .tl { flex:1; font-size:14px; color:#1c1e21; }
+  .tc-r .tl small { display:block; font-size:11.5px; color:#5f6368; }
+  .tc-r input { flex:0 0 92px; width:92px; font-size:15px; padding:9px 8px; border:1px solid var(--border); border-radius:8px; font-family:inherit; }
+  .tc-ok { flex:0 0 44px; font-size:10.5px; font-weight:800; padding:4px 0; border-radius:9px; text-align:center; }
+  .tc-ok.pass { background:#d9ead3; color:#1e6b34; } .tc-ok.fail { background:#f4c7c3; color:#a01c15; } .tc-ok.todo { background:#eef0f2; color:#9aa0a6; }
+  .tc-seg { display:flex; gap:6px; margin-top:8px; }
+  .tc-seg button { flex:1; padding:11px 6px; border-radius:9px; font-size:14px; font-weight:700; border:1px solid var(--border); background:#fff; color:var(--navy); cursor:pointer; }
+  .tc-seg button.on { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .tc-vis { border-top:1px solid var(--border); padding-top:10px; margin-top:10px; }
+  .tc-vis:first-of-type { border-top:0; }
+  .tc-circ { border:1px solid var(--border); border-radius:10px; padding:11px; margin-top:10px; background:#fbfbfc; }
+  .tc-ch { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .tc-ch b { color:var(--navy); }
+  .tc-x { background:none; border:0; color:#9aa0a6; font-size:13px; text-decoration:underline; cursor:pointer; }
+  .tc-sel { display:flex; gap:6px; margin-top:8px; }
+  .tc-sel select { flex:1; min-width:0; font-size:14px; padding:9px 6px; border:1px solid var(--border); border-radius:7px; background:#fff; }
+  .tc-problems { background:#fdf5f5; border:1px solid #f4c7c3; border-radius:12px; padding:12px 14px; margin-bottom:10px; font-size:13.5px; color:#a01c15; }
+  .tc-problems ul { margin:6px 0 0 18px; padding:0; }
+  .tc-foot { position:sticky; bottom:0; background:var(--bg); padding:10px 0 6px; }
+  .tc-status { font-size:13px; font-weight:700; text-align:center; margin-bottom:6px; }
+  #tcSig { width:100%; height:140px; border:1px dashed #9aa0a6; border-radius:10px; background:#fff; touch-action:none; display:block; margin-top:8px; }
+  .tc-add { display:inline-block; margin:8px 6px 0 0; padding:7px 11px; border-radius:16px; border:1px solid var(--border); background:#fff; font-size:13px; font-weight:700; color:var(--navy); cursor:pointer; }
 </style>
 </head>
 <body>
@@ -112,26 +159,70 @@
   </div>
 </div>
 
+<div class="wrap" id="home" style="display:none;">
+  <div class="home-top">
+    <img src="gattera-icon.png" alt="">
+    <div><h1>Gattera Electrical</h1><div class="sub" id="homeSub">Loading…</div></div>
+  </div>
+  <div class="search"><span>&#128269;</span><input id="homeSearch" type="search" placeholder="Find a client: name, phone or suburb" autocomplete="off"></div>
+  <div id="searchResults"></div>
+  <div class="tiles" id="tiles"></div>
+  <button class="refresh" id="summaryBtn" style="display:none;">Email me the weekly summary</button>
+</div>
+
 <div class="wrap" id="app" style="display:none;">
   <header>
     <div>
-      <h1>Job Book</h1>
+      <div class="title-row"><button class="back" data-home>&#8249; Menu</button><h1>Job Book</h1></div>
       <div class="gst" id="gst"></div>
     </div>
     <div class="hdr-btns">
       <button class="refresh" id="addJobBtn" style="background:var(--amber);border-color:var(--amber);">+ Add job</button>
       <button class="refresh" id="qiBtn">+ Invoice</button>
-      <button class="refresh" id="certBtn">Cert</button>
       <button class="refresh" id="refreshBtn">Refresh</button>
     </div>
   </header>
   <div class="chips" id="chips"></div>
   <div class="chips" id="sortChips" style="padding-top:0;"></div>
   <div id="list"><div class="empty">Loading jobs…</div></div>
-  <button class="refresh" id="summaryBtn" style="width:100%;margin-top:14px;">Email me the weekly summary</button>
+</div>
+
+<div class="wrap" id="tests" style="display:none;">
+  <header><div class="title-row"><button class="back" data-home>&#8249; Menu</button><h1>Test &amp; compliance</h1></div></header>
+  <div class="sf-card">
+    <h3>Start a test</h3>
+    <div class="sf-sub">Work through the test sheet on your phone. When every reading passes, it makes the Certificate of Testing and Compliance and the full test record as PDFs.</div>
+    <div class="row"><button class="primary" id="tcForJob">For a job</button><button class="secondary" id="tcStandalone">No job (standalone)</button></div>
+  </div>
+  <div class="sf-card" id="tcDraftsCard" style="display:none;"><h3>Drafts</h3><div class="sf-sub">Saved on this phone. Tap to carry on.</div><div id="tcDrafts"></div></div>
+  <div class="sf-card"><h3>Certificates issued</h3><div id="tcList"><div class="sf-sub">Loading…</div></div></div>
 </div>
 
 <div id="shade"></div>
+<div id="repeatSheet" style="display:none;position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:6;background:#fff;border-radius:14px;padding:20px 18px;width:min(92vw,360px);">
+  <h3 id="rpTitle" style="color:var(--navy);font-size:17px;margin-bottom:4px;"></h3>
+  <div class="sf-sub" id="rpSub"></div>
+  <div class="row"><button class="primary" id="rpQuote">New quote</button><button class="secondary" id="rpInvoice">New invoice</button></div>
+  <div class="row"><button class="secondary" id="rpCancel">Cancel</button></div>
+</div>
+<div id="pickJob" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;">
+  <div class="sf-wrap">
+    <div class="sf-head"><h2 id="pjTitle">Pick a job</h2><button class="sf-close" id="pjClose">Cancel</button></div>
+    <div class="sf-sub" id="pjSub" style="margin:-6px 2px 10px;"></div>
+    <div id="pjList"></div>
+  </div>
+</div>
+<div id="tcEd" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:30;overflow-y:auto;">
+  <div class="sf-wrap" style="padding-bottom:20px;">
+    <div class="sf-head"><h2 id="tcTitle">Test &amp; compliance</h2><button class="sf-close" id="tcClose">Save &amp; close</button></div>
+    <div id="tcProblems" class="tc-problems" style="display:none;"></div>
+    <div id="tcBody"></div>
+    <div class="tc-foot">
+      <div class="tc-status" id="tcStatus"></div>
+      <button type="button" class="sf-go" id="tcSubmit">Create certificate</button>
+    </div>
+  </div>
+</div>
 <div id="modal">
   <h3 id="mTitle"></h3>
   <input id="mInput" type="text">
@@ -474,7 +565,7 @@
   }
 
   function showLogin(withError) {
-    document.getElementById('app').style.display = 'none';
+    ['home', 'app', 'tests'].forEach(function (id) { document.getElementById(id).style.display = 'none'; });
     document.getElementById('login').style.display = 'block';
     document.getElementById('pwErr').style.display = withError ? 'block' : 'none';
     var inp = document.getElementById('pwInput');
@@ -483,7 +574,7 @@
   }
   function showApp() {
     document.getElementById('login').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    route();
   }
   function tryPassword() {
     var v = document.getElementById('pwInput').value;
@@ -506,7 +597,7 @@
   }
   function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
 
-  function load() {
+  function load(after) {
     document.getElementById('refreshBtn').textContent = 'Loading…';
     api({ action:'list' }).then(function (res) {
       document.getElementById('refreshBtn').textContent = 'Refresh';
@@ -532,6 +623,8 @@
       state.builderEmail = res.builderEmail || '';
       state.builderQuoteEmail = res.builderQuoteEmail || '';
       state.own = res.own || null; // also tells us the server can resend
+      state.worker = res.worker || null;
+      state.loaded = true;
       flushNoteQueue();
       var g = res.gst;
       state.gstMode = g.mode || '';
@@ -543,7 +636,10 @@
         document.getElementById('gst').textContent =
           money(g.rolling) + ' of ' + money(g.threshold) + ' GST threshold (' + pct + '%)';
       }
+      state.gstLine = document.getElementById('gst').textContent;
       render();
+      if (currentView() === 'home') renderHome();
+      if (typeof after === 'function') after();
     }).catch(function () {
       document.getElementById('refreshBtn').textContent = 'Refresh';
       toast('No connection — try again with signal.');
@@ -636,6 +732,7 @@
     }
     if (j.status === 'Paid') meta.push('paid <b>' + money(j.paid) + '</b> ' + ago(j.paidDate));
     if (j.builder) meta.push('<span style="color:#205064;font-weight:600;">Builder job · quote, invoice and receipt only</span>');
+    if (j.testCert) meta.push('<span style="color:#1e6b34;font-weight:600;">Tested · certificate ' + esc(j.testCert) + ' issued</span>');
     if (j.notes) meta.push(esc(j.notes));
 
     el.innerHTML =
@@ -668,6 +765,9 @@
       };
       contact.appendChild(bl);
     }
+    var more = btnLink('More work', 'javascript:void(0)');
+    more.onclick = function (ev) { ev.preventDefault(); openRepeat(clientFromJob(j)); };
+    contact.appendChild(more);
     el.appendChild(contact);
 
     var actions = document.createElement('div');
@@ -737,6 +837,8 @@
           send(job, el, { status: back }, 'Reopening — bringing the folder back too…');
         }
       }});
+    if (['Scheduled', 'In Progress', 'Done', 'Invoiced', 'Paid'].indexOf(s) !== -1)
+      A.push({ label: j.testCert ? 'Test again' : 'Test & cert', style:'secondary', run:function (job) { openTest(job); } });
     var rsKind = resendable(j);
     if (rsKind)
       A.push({ label: rsKind === 'quote' ? 'Resend quote' : 'Resend invoice', style:'secondary', run:function (job, el) {
@@ -1278,7 +1380,7 @@
   });
   document.getElementById('qiEmailText').addEventListener('input', function () { qiEmailEdited = true; });
 
-  document.getElementById('addJobBtn').onclick = function () {
+  function openAddJob() {
     ajFromNote = null;
     ['ajName','ajPhone','ajEmail','ajSuburb','ajPostcode','ajAddress','ajDesc','ajDate'].forEach(function (id) {
       document.getElementById(id).value = '';
@@ -1287,7 +1389,8 @@
     setBuilderToggle('ajBuilder', 'ajBuilderHint', false);
     document.getElementById('addJob').style.display = 'block';
     document.getElementById('addJob').scrollTop = 0;
-  };
+  }
+  document.getElementById('addJobBtn').onclick = openAddJob;
   document.getElementById('ajClose').onclick = function () { document.getElementById('addJob').style.display = 'none'; };
   document.getElementById('ajSave').onclick = function () {
     var name = document.getElementById('ajName').value.trim();
@@ -1337,6 +1440,7 @@
           ajFromNote = null;
         }
         toast(msg);
+        go('jobs');
         load();
       } else {
         toast('Check the details and try again.');
@@ -1394,7 +1498,7 @@
   document.getElementById('qiAmount').oninput = recomputeQi;
   document.getElementById('qiAdd').onclick = function () { qi.lines.push({ t: '', a: null }); renderQiLines(); };
   document.getElementById('qiClose').onclick = function () { document.getElementById('qiEd').style.display = 'none'; };
-  document.getElementById('qiBtn').onclick = function () {
+  function openQuickInvoice() {
     setBuilderToggle('qiBuilder', 'qiBuilderHint', false);
     ['qiName','qiPhone','qiEmail','qiSuburb','qiPostcode','qiAddress','qiAmount'].forEach(function (id) {
       document.getElementById(id).value = '';
@@ -1407,7 +1511,8 @@
     renderQiLines();
     document.getElementById('qiEd').style.display = 'block';
     document.getElementById('qiEd').scrollTop = 0;
-  };
+  }
+  document.getElementById('qiBtn').onclick = openQuickInvoice;
   document.getElementById('qiSave').onclick = function () {
     var name = document.getElementById('qiName').value.trim();
     var phone = document.getElementById('qiPhone').value.trim();
@@ -1463,6 +1568,7 @@
       toast(msg, true);
       setTimeout(function () { var t = document.getElementById('toast'); if (t.textContent === msg) t.style.display = 'none'; }, 7000);
       state.filter = 'Owed';
+      go('jobs');
       load();
     }).catch(function () {
       btn.disabled = false;
@@ -1497,7 +1603,7 @@
   document.getElementById('csDate').onchange = function () {
     document.getElementById('csNext').value = csPlusYear(this.value);
   };
-  document.getElementById('certBtn').onclick = function () {
+  function openSmokeCert() {
     ['csName','csAddress','csSuburb','csEmail','csLocs','csN'].forEach(function (id) {
       document.getElementById(id).value = '';
     });
@@ -1510,7 +1616,7 @@
     document.getElementById('csInterHint').textContent = 'Tap to confirm the test. No test, no certificate.';
     document.getElementById('certEd').style.display = 'block';
     document.getElementById('certEd').scrollTop = 0;
-  };
+  }
   document.getElementById('csClose').onclick = function () { document.getElementById('certEd').style.display = 'none'; };
   document.getElementById('csSave').onclick = function () {
     var name = document.getElementById('csName').value.trim();
@@ -2104,6 +2210,740 @@
     send(le.job, le.el, set, busy);
   };
 
+  // ── Main menu + simple hash routing (#home, #jobs, #tests) ─────────────────
+  var VIEWS = ['home', 'app', 'tests'];
+  function loggedIn() { return document.getElementById('login').style.display !== 'block'; }
+  function currentView() {
+    var h = (location.hash || '#home').slice(1);
+    return h === 'jobs' ? 'app' : h === 'tests' ? 'tests' : 'home';
+  }
+  function route() {
+    if (!loggedIn()) return;
+    var v = currentView();
+    VIEWS.forEach(function (id) { document.getElementById(id).style.display = id === v ? 'block' : 'none'; });
+    if (v === 'home') renderHome();
+    if (v === 'tests') renderTests();
+  }
+  function go(view) {
+    if (location.hash === '#' + view) { route(); return; }
+    location.hash = view;
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', function () { route(); window.scrollTo(0, 0); });
+  [].forEach.call(document.querySelectorAll('[data-home]'), function (b) { b.onclick = function () { go('home'); }; });
+
+  function tile(icon, title, sub, onClick, extraClass) {
+    var b = document.createElement(typeof onClick === 'string' ? 'a' : 'button');
+    b.className = 'tile' + (extraClass ? ' ' + extraClass : '');
+    if (typeof onClick === 'string') b.href = onClick; else { b.type = 'button'; b.onclick = onClick; }
+    b.innerHTML = '<span class="ti">' + icon + '</span><div><div class="tt">' + esc(title) + '</div>' +
+      (sub ? '<div class="tb">' + sub + '</div>' : '') + '</div>';
+    return b;
+  }
+  function renderHome() {
+    var jobs = state.jobs || [];
+    var newN = jobs.filter(function (j) { return j.status === 'New Enquiry' || j.status === 'Contacted'; }).length;
+    var owed = jobs.filter(function (j) { return j.status === 'Invoiced'; });
+    var owedAmt = owed.reduce(function (t, j) { return t + (Number(j.invoiced) || 0); }, 0);
+    var today = jobs.filter(function (j) { return j.scheduled === localTodayISO() && ['Scheduled', 'In Progress'].indexOf(j.status) !== -1; }).length;
+    var toInvoice = jobs.filter(function (j) { return j.status === 'Done'; }).length;
+    var drafts = Object.keys(tcDrafts()).length;
+    var openNotes = allNotes().filter(function (n) { return n.status !== 'Converted'; }).length;
+    var sub = document.getElementById('homeSub');
+    sub.textContent = state.loaded
+      ? (today ? today + ' job' + (today > 1 ? 's' : '') + ' booked today' : 'Nothing booked today') + (state.gstLine ? ' · ' + state.gstLine : '')
+      : 'Loading…';
+
+    var jobLine = [];
+    if (newN) jobLine.push('<b>' + newN + ' new</b>');
+    if (toInvoice) jobLine.push('<b>' + toInvoice + ' to invoice</b>');
+    if (owed.length) jobLine.push(owed.length + ' owed (' + money(owedAmt) + ')');
+    var t = document.getElementById('tiles');
+    t.innerHTML = '';
+    t.appendChild(tile('&#128203;', 'Jobs', state.loaded ? (jobLine.join(' · ') || 'All caught up') : 'Loading…',
+      function () { if (state.filter === 'Notes') state.filter = 'New'; go('jobs'); render(); }, 'hero'));
+    t.appendChild(tile('&#10133;', 'Add job', 'Phone or walk-up lead', openAddJob));
+    t.appendChild(tile('&#129534;', 'Quick invoice', 'Work done, bill it now', openQuickInvoice));
+    t.appendChild(tile('&#9889;', 'Test & compliance', drafts ? '<b>' + drafts + ' draft' + (drafts > 1 ? 's' : '') + '</b> to finish' : 'Test sheets and certificates', function () { go('tests'); }));
+    t.appendChild(tile('&#128293;', 'Smoke alarm cert', 'Standalone certificate', openSmokeCert));
+    t.appendChild(tile('&#129466;', 'Safety record', 'SWMS or pre-start check', pickSafetyJob));
+    t.appendChild(tile('&#128221;', 'Notes & leads', openNotes ? openNotes + ' open' : 'Jot down a job', function () { state.filter = 'Notes'; go('jobs'); render(); }));
+    t.appendChild(tile('&#128179;', 'Expenses', 'Log a receipt', 'log.html'));
+    t.appendChild(tile('&#128176;', 'Money', 'Income, tax and GST', 'log.html#money'));
+    t.appendChild(tile('&#128276;', 'Reminders', 'Licence, insurance, renewals', 'log.html#reminders'));
+    t.appendChild(tile('&#128200;', 'Weekly summary', 'Email it to me now', function () { document.getElementById('summaryBtn').click(); }));
+  }
+
+  // ── Client search: every client ever, with New quote / New invoice ────────
+  var srTimer = null, srSeq = 0;
+  document.getElementById('homeSearch').addEventListener('input', function () {
+    clearTimeout(srTimer);
+    var q = this.value.trim();
+    if (q.length < 2) { srSeq++; document.getElementById('searchResults').innerHTML = ''; return; }
+    srTimer = setTimeout(function () { doSearch(q); }, 450);
+  });
+  function fmtPhone(p) {
+    var d = String(p || '');
+    return d.length === 10 ? d.slice(0, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7) : d;
+  }
+  function auDate(iso) { return iso ? iso.split('-').reverse().join('/') : ''; }
+  function doSearch(q) {
+    var seq = ++srSeq;
+    var box = document.getElementById('searchResults');
+    box.innerHTML = '<div class="sf-sub" style="padding:0 2px 10px;">Searching…</div>';
+    api({ action: 'clientSearch', q: q }).then(function (res) {
+      if (seq !== srSeq) return;
+      if (!res.ok) {
+        box.innerHTML = '<div class="empty" style="padding:16px;">' + (res.error === 'bad_action'
+          ? 'Search needs the latest script update.' : 'Couldn\'t search, try again.') + '</div>';
+        return;
+      }
+      if (!res.clients.length) { box.innerHTML = '<div class="empty" style="padding:16px;">No clients match "' + esc(q) + '".</div>'; return; }
+      box.innerHTML = '';
+      res.clients.forEach(function (c) { box.appendChild(searchCard(c)); });
+    }).catch(function () { if (seq === srSeq) box.innerHTML = '<div class="empty" style="padding:16px;">No connection, try again.</div>'; });
+  }
+  function searchCard(c) {
+    var el = document.createElement('div');
+    el.className = 'sr';
+    var jobs = (c.jobs || []).map(function (j) {
+      return esc(j.id) + ' · ' + esc(j.status) + (j.created ? ' · ' + auDate(j.created) : '') +
+        (j.amount ? ' · ' + money(j.amount) : '') + (j.what ? ' · ' + esc(j.what) : '');
+    });
+    el.innerHTML = '<div class="name">' + esc(c.name) + (c.builder ? '<span class="tag">Builder</span>' : '') + '</div>' +
+      '<div class="where">' + [fmtPhone(c.phone), esc(c.suburb)].filter(String).join(' · ') + '</div>' +
+      (c.email ? '<div class="where" style="word-break:break-all;">' + esc(c.email) + '</div>' : '') +
+      '<div class="jobs">' + (c.jobCount ? c.jobCount + ' job' + (c.jobCount > 1 ? 's' : '') + (c.lifetime ? ' · ' + money(c.lifetime) + ' paid all up' : '') + '<br>' + jobs.join('<br>') : 'No jobs yet') + '</div>';
+    var row = document.createElement('div');
+    row.className = 'row';
+    var q = document.createElement('button'); q.className = 'primary'; q.textContent = 'New quote';
+    q.onclick = function () { repeatQuote(c); };
+    var inv = document.createElement('button'); inv.className = 'secondary'; inv.textContent = 'New invoice';
+    inv.onclick = function () { repeatInvoice(c); };
+    row.appendChild(q); row.appendChild(inv);
+    if (c.phone) row.appendChild(btnLink('Call', 'tel:+61' + String(c.phone).slice(1)));
+    el.appendChild(row);
+    return el;
+  }
+
+  // ── Repeat client: same details, straight to a new quote or invoice ───────
+  function clientFromJob(j) {
+    return { name: j.name, phone: j.phone, email: j.email, suburb: j.suburb, postcode: j.postcode,
+      address: j.address, builder: !!j.builder };
+  }
+  var rpClient = null;
+  function openRepeat(c) {
+    rpClient = c;
+    document.getElementById('rpTitle').textContent = 'More work for ' + c.name;
+    document.getElementById('rpSub').textContent = 'Their details carry over. Quote it first, or invoice work that\'s already done.';
+    document.getElementById('shade').style.display = 'block';
+    document.getElementById('repeatSheet').style.display = 'block';
+  }
+  function closeRepeat() {
+    document.getElementById('repeatSheet').style.display = 'none';
+    if (document.getElementById('modal').style.display !== 'block') document.getElementById('shade').style.display = 'none';
+  }
+  document.getElementById('rpCancel').onclick = closeRepeat;
+  document.getElementById('rpQuote').onclick = function () { closeRepeat(); repeatQuote(rpClient); };
+  document.getElementById('rpInvoice').onclick = function () { closeRepeat(); repeatInvoice(rpClient); };
+  document.getElementById('shade').addEventListener('click', closeRepeat);
+
+  function repeatQuote(c) {
+    if (!c || !c.phone || !c.suburb) { toast('Their mobile or suburb is missing, so use + Add job for this one.'); return; }
+    toast('Setting up a new job for ' + c.name + '…', true);
+    api({ action: 'addJob', name: c.name, phone: c.phone, email: c.email || '', suburb: c.suburb,
+      postcode: c.postcode || '', address: c.address || '', desc: '', builder: !!c.builder })
+      .then(function (res) {
+        if (!res.ok) { toast('Couldn\'t set up the job. Check their details and try + Add job.'); return; }
+        state.filter = 'New';
+        load(function () {
+          go('jobs');
+          var j = state.jobs.filter(function (x) { return x.id === res.jobId; })[0];
+          if (j) {
+            toast(res.jobId + ' created. Add the work, then Save quote to send it.');
+            openLineEditor(j, document.createElement('div'), 'quote');
+          } else toast(res.jobId + ' created. It\'s in the New lane.');
+        });
+      }).catch(function () { toast('No connection, nothing created.'); });
+  }
+  function repeatInvoice(c) {
+    if (!c) return;
+    openQuickInvoice();
+    var set = function (id, v) { document.getElementById(id).value = v || ''; };
+    set('qiName', c.name); set('qiPhone', c.phone); set('qiEmail', c.email); set('qiSuburb', c.suburb);
+    set('qiPostcode', c.postcode); set('qiAddress', c.address);
+    if (c.builder) setBuilderToggle('qiBuilder', 'qiBuilderHint', true);
+    syncQiEmail();
+  }
+
+  // ── Pick a job (safety record, test & compliance) ────────────────────────
+  var pjPick = null;
+  function openPickJob(title, sub, jobs, onPick) {
+    pjPick = onPick;
+    document.getElementById('pjTitle').textContent = title;
+    document.getElementById('pjSub').textContent = sub;
+    var list = document.getElementById('pjList');
+    list.innerHTML = '';
+    if (!jobs.length) list.innerHTML = '<div class="empty">No jobs to pick from right now.</div>';
+    jobs.forEach(function (j) {
+      var el = document.createElement('div');
+      el.className = 'pj';
+      el.innerHTML = '<div><b>' + esc(j.name) + '</b><div class="where">' + esc(j.suburb) +
+        (j.scheduled ? ' · booked ' + auDate(j.scheduled) : '') + '</div></div>' +
+        '<span class="pill" style="background:' + (PILL[j.status] || ['#eee'])[0] + ';color:' + (PILL[j.status] || ['', '#555'])[1] + ';">' + esc(j.status) + '</span>';
+      el.onclick = function () { document.getElementById('pickJob').style.display = 'none'; pjPick(j); };
+      list.appendChild(el);
+    });
+    document.getElementById('pickJob').style.display = 'block';
+    document.getElementById('pickJob').scrollTop = 0;
+  }
+  document.getElementById('pjClose').onclick = function () { document.getElementById('pickJob').style.display = 'none'; };
+  function pickSafetyJob() {
+    var jobs = sortedJobs(state.jobs.filter(function (j) {
+      return ['Scheduled', 'In Progress'].indexOf(j.status) !== -1 || (j.source === 'Quick invoice' && !j.safetyDone && j.status === 'Invoiced');
+    }));
+    openPickJob('Safety record', 'Booked and in-progress jobs. Picking a booked job files the record and starts it.', jobs, function (j) {
+      openSafety(j, document.createElement('div'), j.status === 'Scheduled');
+    });
+  }
+
+  // ── Test & compliance ──────────────────────────────────────────────────────
+  var TC_KEY = 'jb_tc_drafts';
+  var TC_EARTH = 0.5, TC_IR = 1, TC_VPN = [216, 253], TC_VPP = [376, 440];
+  var TC_RPHE = { '10|1.5': 2.0, '16|2.5': 1.2, '20|2.5': 1.0 };
+  var TC_ZSC = { 10: 3.1, 16: 1.9, 20: 1.5 };
+  var TC_VIS = [
+    ['general', 'General', 'Basic and fault protection, hazardous parts, spread of fire, condition of equipment'],
+    ['mains', 'Consumer mains', 'Current capacity, voltage drop, underground/aerial conditions, connections, external influences'],
+    ['boards', 'Switchboards', 'Location, protective, isolation and connecting devices, fixed wiring, switchgear, labelling'],
+    ['wiring', 'Wiring systems', 'Conductor size, core ID, support and fixing, enclosures, installation conditions, segregation'],
+    ['equipment', 'Electrical equipment', 'Isolation and switching, connection, fixing, moisture protection, suitable for V, A and Hz']
+  ];
+  var TC_SOW = [
+    ['procedures', 'Customer procedures done (SWMS, work permit, inductions)'],
+    ['jsa', 'Electrical specific JSA / risk assessment done'],
+    ['isolated', 'Supply isolated'],
+    ['lockedOut', 'Locked out (isolation secured)'],
+    ['testedDead', 'Tested for dead: prove, test, prove. All A-N-E, incl. solar, UPS, batteries']
+  ];
+  var TC_AMPS = ['', 6, 10, 16, 20, 25, 32, 40, 50, 63];
+  var TC_CABLES = ['1', '1.5', '2.5', '4', '6', '10', '16', '25'];
+
+  function tcDrafts() { try { return JSON.parse(localStorage.getItem(TC_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function tcSaveDrafts(all) { try { localStorage.setItem(TC_KEY, JSON.stringify(all)); } catch (e) { toast('Phone storage is full, the draft may not save.'); } }
+  function tnum(v) {
+    var s = String(v == null ? '' : v).trim();
+    if (!s) return null;
+    if (/^(ol|>|over)/i.test(s) && !/[0-9]/.test(s)) return 9999;
+    var n = parseFloat(s.replace(/[^0-9.]/g, ''));
+    return isNaN(n) ? null : n;
+  }
+  function zsLim(amps, curve) {
+    if (!amps) return null;
+    if (curve === 'C' && TC_ZSC[amps]) return TC_ZSC[amps];
+    var m = { B: 4, C: 7.5, D: 12.5 }[curve] || 7.5;
+    return Math.round(230 / (m * amps) * 100) / 100;
+  }
+  function rpheTable(c) { return c.curve === 'C' ? (TC_RPHE[c.amps + '|' + c.cable] || null) : null; }
+  function rpheLim(c) { return rpheTable(c) || tnum(c.rpheLimit); }
+  function rcdMax() { return (state.worker && state.worker.rcdMs) || 40; }
+
+  function newCircuit(kind) {
+    return { board: 'Main board', name: '', kind: kind || 'power', amps: kind === 'light' ? 10 : 16, curve: 'C',
+      cable: kind === 'light' ? '1.5' : '2.5', rcd: true, ir: '', polarity: false, connections: false,
+      rphe: '', rpheLimit: '', zs: '', rcdMs: '' };
+  }
+  function newTestData(job) {
+    var w = state.worker || {};
+    return {
+      jobId: job ? job.id : '', mode: 'small', phase: '1',
+      client: { name: job ? job.name : '', email: job ? (job.email || '') : '' },
+      site: { address: job ? (job.address || '') : '', suburb: job ? (job.suburb || '') : '' },
+      work: job ? (job.workDesc || job.description || '') : '',
+      testDate: localTodayISO(),
+      sow: { pcName: '', procedures: false, jsa: false, isolated: false, lockedOut: false, testedDead: false },
+      visual: { general: { res: '', note: '' }, mains: { res: '', note: '' }, boards: { res: '', note: '' }, wiring: { res: '', note: '' }, equipment: { res: '', note: '' } },
+      inspectedBy: '', rooms: [],
+      earth: { main: '', board: '', bonding: '', largestPE: '', others: [] },
+      circuits: [newCircuit('power')],
+      mains: { men: false, v: { an: '', ae: '', ne: '', bn: '', cn: '', be: '', ce: '', ab: '', ac: '', bc: '' } },
+      rcd: { button: false, correctCircuit: false },
+      signer: { name: w.name || 'Jarid Gattera', licence: w.licence || '' },
+      emailTo: job ? (job.email || '') : '', emailTo2: '', sendEmail: !!(job && job.email)
+    };
+  }
+
+  var tc = null; // { id, d, sig }
+  function openTest(job) {
+    var id = job ? 'job-' + job.id : 'sa-' + Date.now();
+    var all = tcDrafts();
+    tc = all[id] ? { id: id, d: all[id].d, sig: all[id].sig || '' } : { id: id, d: newTestData(job), sig: '' };
+    document.getElementById('tcTitle').textContent = 'Test: ' + (tc.d.client.name || 'new job');
+    document.getElementById('tcProblems').style.display = 'none';
+    renderTc();
+    document.getElementById('tcEd').style.display = 'block';
+    document.getElementById('tcEd').scrollTop = 0;
+  }
+  function resumeDraft(id) {
+    var all = tcDrafts();
+    if (!all[id]) return;
+    tc = { id: id, d: all[id].d, sig: all[id].sig || '' };
+    document.getElementById('tcTitle').textContent = 'Test: ' + (tc.d.client.name || 'new job');
+    document.getElementById('tcProblems').style.display = 'none';
+    renderTc();
+    document.getElementById('tcEd').style.display = 'block';
+    document.getElementById('tcEd').scrollTop = 0;
+  }
+  var tcSaveTimer = null;
+  function tcChanged() {
+    clearTimeout(tcSaveTimer);
+    tcSaveTimer = setTimeout(tcSaveNow, 500);
+    tcUpdateStatus();
+  }
+  function tcSaveNow() {
+    if (!tc) return;
+    var all = tcDrafts();
+    all[tc.id] = { saved: Date.now(), d: tc.d, sig: tc.sig, label: (tc.d.client.name || 'No name') + (tc.d.site.suburb ? ', ' + tc.d.site.suburb : '') };
+    tcSaveDrafts(all);
+  }
+  document.getElementById('tcClose').onclick = function () {
+    tcSaveNow();
+    document.getElementById('tcEd').style.display = 'none';
+    if (currentView() === 'tests') renderTests();
+    toast('Draft saved on this phone. Find it under Test & compliance.');
+  };
+
+  // Small DOM helpers for the test form.
+  function h(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function tcCard(title, sub) {
+    var c = h('div', 'sf-card');
+    c.appendChild(h('h3', null, esc(title)));
+    if (sub) c.appendChild(h('div', 'sf-sub', sub));
+    return c;
+  }
+  function tcInput(obj, key, placeholder, type) {
+    var i = document.createElement('input');
+    i.className = 'sf-input'; i.type = type || 'text'; i.placeholder = placeholder || ''; i.value = obj[key] || '';
+    i.oninput = function () { obj[key] = i.value; tcChanged(); };
+    return i;
+  }
+  function tcCheck(obj, key, label) {
+    var l = h('label', 'sf-check');
+    var i = document.createElement('input'); i.type = 'checkbox'; i.checked = !!obj[key];
+    i.onchange = function () { obj[key] = i.checked; tcChanged(); };
+    l.appendChild(i); l.appendChild(h('span', null, esc(label)));
+    return l;
+  }
+  function tcSeg(obj, key, opts, after) {
+    var w = h('div', 'tc-seg');
+    opts.forEach(function (o) {
+      var b = h('button', obj[key] === o[0] ? 'on' : '', esc(o[1]));
+      b.type = 'button';
+      b.onclick = function () {
+        obj[key] = o[0];
+        [].forEach.call(w.children, function (x) { x.className = ''; });
+        b.className = 'on';
+        tcChanged();
+        if (after) after();
+      };
+      w.appendChild(b);
+    });
+    return w;
+  }
+  // rule(): { max } / { min } / { range } / {} -> status chip next to the reading
+  function readingState(raw, rule) {
+    var n = tnum(raw);
+    if (n === null) return 'todo';
+    if (rule.max != null) return n <= rule.max ? 'pass' : 'fail';
+    if (rule.min != null) return n >= rule.min ? 'pass' : 'fail';
+    if (rule.range) return n >= rule.range[0] && n <= rule.range[1] ? 'pass' : 'fail';
+    return 'pass';
+  }
+  function tcReading(obj, key, label, sub, ruleFn, unit) {
+    var r = h('div', 'tc-r');
+    var lab = h('div', 'tl', esc(label) + (sub ? '<small>' + sub + '</small>' : ''));
+    var i = document.createElement('input');
+    i.inputMode = 'decimal'; i.placeholder = unit || ''; i.value = obj[key] || '';
+    var chip = h('span', 'tc-ok');
+    function upd() {
+      var st = ruleFn ? readingState(i.value, ruleFn()) : (tnum(i.value) === null ? 'todo' : 'pass');
+      chip.className = 'tc-ok ' + st;
+      chip.textContent = st === 'pass' ? 'PASS' : st === 'fail' ? 'FAIL' : '-';
+    }
+    i.oninput = function () { obj[key] = i.value; upd(); tcChanged(); };
+    r.appendChild(lab); r.appendChild(i); r.appendChild(chip);
+    upd();
+    r.refresh = upd;
+    return r;
+  }
+  function tcSelect(opts, val, onChange) {
+    var s = document.createElement('select');
+    opts.forEach(function (o) {
+      var op = document.createElement('option');
+      op.value = Array.isArray(o) ? o[0] : o; op.textContent = Array.isArray(o) ? o[1] : (o === '' ? 'Size' : o);
+      if (String(op.value) === String(val)) op.selected = true;
+      s.appendChild(op);
+    });
+    s.onchange = function () { onChange(s.value); };
+    return s;
+  }
+
+  function renderTc() {
+    var d = tc.d;
+    var body = document.getElementById('tcBody');
+    body.innerHTML = '';
+    var build = d.mode === 'build';
+
+    // 0. Job details
+    var c0 = tcCard('Job details', d.jobId ? 'Linked to ' + esc(d.jobId) + '. The PDFs save into its folder.' : 'Standalone test. The PDFs save into 06 Certificates.');
+    c0.appendChild(tcInput(d.client, 'name', 'Customer name *'));
+    c0.appendChild(tcInput(d.client, 'email', 'Customer email (for the certificate)', 'email'));
+    c0.appendChild(tcInput(d.site, 'address', 'Site address *'));
+    c0.appendChild(tcInput(d.site, 'suburb', 'Suburb'));
+    var work = document.createElement('textarea');
+    work.className = 'sf-input'; work.rows = 2; work.placeholder = 'Work done, e.g. Supply and install Tesla wall connector on new 32A circuit *';
+    work.value = d.work || '';
+    work.oninput = function () { d.work = work.value; tcChanged(); };
+    c0.appendChild(work);
+    var dt = tcInput(d, 'testDate', '', 'date');
+    c0.appendChild(dt);
+    c0.appendChild(tcSeg(d, 'mode', [['small', 'Small job'], ['build', 'New build']], renderTc));
+    c0.appendChild(tcSeg(d, 'phase', [['1', 'Single phase'], ['3', 'Three phase']], renderTc));
+    body.appendChild(c0);
+
+    // 1. Safe system of work
+    var c1 = tcCard('1. Safe system of work', 'Use the right PPE for all testing.');
+    c1.appendChild(tcInput(d.sow, 'pcName', 'Permission from (builder / owner / person in control) *'));
+    TC_SOW.forEach(function (s) { c1.appendChild(tcCheck(d.sow, s[0], s[1])); });
+    body.appendChild(c1);
+
+    // 2. Visual inspection
+    var c2 = tcCard('2. Visual inspection', 'AS/NZS 3000:2018 clause 8.2.2.' + (build ? ' Plan in hand, room to room.' : ''));
+    TC_VIS.forEach(function (v) {
+      var box = h('div', 'tc-vis');
+      box.appendChild(h('div', null, '<b style="color:var(--navy);font-size:14.5px;">' + esc(v[1]) + '</b><div class="sf-sub">' + esc(v[2]) + '</div>'));
+      box.appendChild(tcSeg(d.visual[v[0]], 'res', [['pass', 'Pass'], ['na', 'N/A']]));
+      var note = tcInput(d.visual[v[0]], 'note', 'Remarks (optional)');
+      box.appendChild(note);
+      c2.appendChild(box);
+    });
+    if (build) {
+      c2.appendChild(tcInput(d, 'inspectedBy', 'Initial / final inspection by'));
+      var rooms = h('div', 'tc-vis');
+      rooms.appendChild(h('div', null, '<b style="color:var(--navy);font-size:14.5px;">Room by room</b><div class="sf-sub">Final fit-off and final positions confirmed against the plan.</div>'));
+      d.rooms.forEach(function (rm, i) {
+        var row = h('div', 'tc-r');
+        var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!rm.ok; cb.style.width = '20px'; cb.style.height = '20px'; cb.style.flex = 'none';
+        cb.onchange = function () { rm.ok = cb.checked; tcChanged(); };
+        var nm = document.createElement('input'); nm.value = rm.name; nm.style.flex = '1'; nm.style.width = 'auto';
+        nm.oninput = function () { rm.name = nm.value; tcChanged(); };
+        var x = h('button', 'tc-x', 'remove'); x.type = 'button';
+        x.onclick = function () { d.rooms.splice(i, 1); tcChanged(); renderTc(); };
+        row.appendChild(cb); row.appendChild(nm); row.appendChild(x);
+        rooms.appendChild(row);
+      });
+      ['Kitchen', 'Living', 'Dining', 'Laundry', 'Bathroom', 'Ensuite', 'Bed 1', 'Bed 2', 'Bed 3', 'Bed 4', 'Garage', 'Outside', '+ Other'].forEach(function (nm) {
+        var b = h('button', 'tc-add', esc(nm)); b.type = 'button';
+        b.onclick = function () { d.rooms.push({ name: nm === '+ Other' ? 'Room' : nm, ok: false }); tcChanged(); renderTc(); };
+        rooms.appendChild(b);
+      });
+      c2.appendChild(rooms);
+    }
+    body.appendChild(c2);
+
+    // 3. Earth continuity
+    var c3 = tcCard('3. Earth continuity', 'Max ' + TC_EARTH + ' Ω. Leave bonding blank if there is none.');
+    var eRule = function () { return { max: TC_EARTH }; };
+    c3.appendChild(tcReading(d.earth, 'main', 'Main earth *', 'Disconnect and test to the earth rod', eRule, 'Ω'));
+    c3.appendChild(tcReading(d.earth, 'board', 'Switchboard earth' + (build ? ' *' : ''), 'MEN disconnected, same size as main earth', eRule, 'Ω'));
+    c3.appendChild(tcReading(d.earth, 'bonding', 'Equipotential bonding', 'Min 4 mm²', eRule, 'Ω'));
+    d.earth.others.forEach(function (o, i) {
+      var r = tcReading(o, 'val', o.name, null, eRule, 'Ω');
+      var x = h('button', 'tc-x', '×'); x.type = 'button'; x.style.fontSize = '18px'; x.style.textDecoration = 'none';
+      x.onclick = function () { d.earth.others.splice(i, 1); tcChanged(); renderTc(); };
+      r.appendChild(x);
+      c3.appendChild(r);
+    });
+    ['Air con', 'Hot water', 'Wall oven', 'Hotplate', 'Pool', 'Construction frame', '+ Other'].forEach(function (nm) {
+      var b = h('button', 'tc-add', '+ ' + esc(nm.replace('+ ', ''))); b.type = 'button';
+      b.onclick = function () { d.earth.others.push({ name: nm === '+ Other' ? 'Bonded item' : nm, val: '' }); tcChanged(); renderTc(); };
+      c3.appendChild(b);
+    });
+    c3.appendChild(tcReading(d.earth, 'largestPE', 'Protective earths: largest reading', 'Table 8.2, all points tested (record)', null, 'Ω'));
+    body.appendChild(c3);
+
+    // 4. Circuits
+    var c4 = tcCard('4. Circuits', 'One card per circuit. Limits fill in from the breaker: IR min ' + TC_IR + ' MΩ, R phe Table 8.2, Zs Table 8.1, RCD max ' + rcdMax() + ' ms.');
+    d.circuits.forEach(function (c, i) {
+      var box = h('div', 'tc-circ');
+      var head = h('div', 'tc-ch');
+      head.appendChild(h('b', null, 'Circuit ' + (i + 1)));
+      if (d.circuits.length > 1) {
+        var rm = h('button', 'tc-x', 'remove'); rm.type = 'button';
+        rm.onclick = function () { if (confirm('Remove circuit ' + (i + 1) + '?')) { d.circuits.splice(i, 1); tcChanged(); renderTc(); } };
+        head.appendChild(rm);
+      }
+      box.appendChild(head);
+      if (build) box.appendChild(tcInput(c, 'board', 'Board, e.g. Main board, Sub-board garage'));
+      box.appendChild(tcInput(c, 'name', 'Circuit name, e.g. EV charger, Lights 1, Power kitchen *'));
+      var sel = h('div', 'tc-sel');
+      var refreshLimits = function () { rphe.refresh(); zs.refresh(); limitRow.style.display = rpheTable(c) ? 'none' : 'flex'; zsNote.textContent = 'Zs limit ' + (zsLim(Number(c.amps), c.curve) || '-') + ' Ω'; tcChanged(); };
+      sel.appendChild(tcSelect([['light', 'Lights'], ['power', 'Power'], ['other', 'Other']], c.kind, function (v) { c.kind = v; tcChanged(); }));
+      sel.appendChild(tcSelect(TC_AMPS.map(function (a) { return [a, a ? a + ' A' : 'Breaker']; }), c.amps, function (v) { c.amps = Number(v) || ''; refreshLimits(); }));
+      sel.appendChild(tcSelect([['B', 'B curve'], ['C', 'C curve'], ['D', 'D curve']], c.curve, function (v) { c.curve = v; refreshLimits(); }));
+      sel.appendChild(tcSelect(TC_CABLES.map(function (x) { return [x, x + ' mm²']; }), c.cable, function (v) { c.cable = v; refreshLimits(); }));
+      box.appendChild(sel);
+      box.appendChild(tcCheck(c, 'rcd', 'RCD / RCBO protected'));
+      box.appendChild(tcReading(c, 'ir', 'Insulation resistance *', 'Min ' + TC_IR + ' MΩ', function () { return { min: TC_IR }; }, 'MΩ'));
+      box.appendChild(tcCheck(c, 'polarity', 'Polarity correct (actives switched, neutrals not)'));
+      box.appendChild(tcCheck(c, 'connections', 'Correct circuit connections (no interconnection)'));
+      var limitRow = h('div', 'tc-r');
+      limitRow.appendChild(h('div', 'tl', 'R phe limit from Table 8.2<small>No table value for this breaker and cable, so enter it</small>'));
+      var li = document.createElement('input'); li.inputMode = 'decimal'; li.placeholder = 'Ω'; li.value = c.rpheLimit || '';
+      li.oninput = function () { c.rpheLimit = li.value; rphe.refresh(); tcChanged(); };
+      limitRow.appendChild(li);
+      limitRow.style.display = rpheTable(c) ? 'none' : 'flex';
+      box.appendChild(limitRow);
+      var rphe = tcReading(c, 'rphe', 'Fault loop resistance R phe *', 'Furthest point', function () { var l = rpheLim(c); return l ? { max: l } : { max: -1 }; }, 'Ω');
+      box.appendChild(rphe);
+      var zs = tcReading(c, 'zs', 'Fault loop impedance Zs *', 'After energising, furthest point', function () { var l = zsLim(Number(c.amps), c.curve); return l ? { max: l } : { max: -1 }; }, 'Ω');
+      var zsNote = h('div', 'sf-sub', 'Zs limit ' + (zsLim(Number(c.amps), c.curve) || '-') + ' Ω');
+      box.appendChild(zs);
+      box.appendChild(zsNote);
+      var rcdRow = tcReading(c, 'rcdMs', 'RCD trip time', 'Max ' + rcdMax() + ' ms', function () { return { max: rcdMax() }; }, 'ms');
+      rcdRow.style.display = c.rcd ? 'flex' : 'none';
+      box.appendChild(rcdRow);
+      box.querySelector('input[type=checkbox]').addEventListener('change', function () { rcdRow.style.display = c.rcd ? 'flex' : 'none'; });
+      c4.appendChild(box);
+    });
+    var addRow = h('div', 'row');
+    [['power', '+ Power circuit'], ['light', '+ Lighting circuit'], ['other', '+ Other circuit']].forEach(function (o) {
+      var b = h('button', 'secondary', esc(o[1])); b.type = 'button';
+      b.onclick = function () { var n = newCircuit(o[0]); if (o[0] === 'other') { n.amps = 32; n.cable = '6'; } d.circuits.push(n); tcChanged(); renderTc(); };
+      addRow.appendChild(b);
+    });
+    c4.appendChild(addRow);
+    body.appendChild(c4);
+
+    // 5. Mains
+    var c5 = tcCard('5. Reconnect MEN, energise, supply volts', 'Main service supply volts at links and mains polarity.');
+    c5.appendChild(tcCheck(d.mains, 'men', 'MEN link reconnected, installation energised *'));
+    var pn = function () { return { range: TC_VPN }; }, pp = function () { return { range: TC_VPP }; };
+    c5.appendChild(tcReading(d.mains.v, 'an', 'A-N *', TC_VPN.join('-') + ' V', pn, 'V'));
+    c5.appendChild(tcReading(d.mains.v, 'ae', 'A-E *', TC_VPN.join('-') + ' V', pn, 'V'));
+    c5.appendChild(tcReading(d.mains.v, 'ne', 'N-E', 'Record', null, 'V'));
+    if (d.phase === '3') {
+      c5.appendChild(tcReading(d.mains.v, 'bn', 'B-N *', TC_VPN.join('-') + ' V', pn, 'V'));
+      c5.appendChild(tcReading(d.mains.v, 'cn', 'C-N *', TC_VPN.join('-') + ' V', pn, 'V'));
+      c5.appendChild(tcReading(d.mains.v, 'be', 'B-E', 'Record', null, 'V'));
+      c5.appendChild(tcReading(d.mains.v, 'ce', 'C-E', 'Record', null, 'V'));
+      c5.appendChild(tcReading(d.mains.v, 'ab', 'A-B *', TC_VPP.join('-') + ' V', pp, 'V'));
+      c5.appendChild(tcReading(d.mains.v, 'ac', 'A-C *', TC_VPP.join('-') + ' V', pp, 'V'));
+      c5.appendChild(tcReading(d.mains.v, 'bc', 'B-C *', TC_VPP.join('-') + ' V', pp, 'V'));
+    }
+    body.appendChild(c5);
+
+    // 6. RCD
+    var c6 = tcCard('6. RCD tests', 'Trip times are entered on each circuit above.');
+    c6.appendChild(tcCheck(d.rcd, 'button', 'Test button operates the RCD'));
+    c6.appendChild(tcCheck(d.rcd, 'correctCircuit', 'Trips the correct circuit, and only that circuit'));
+    body.appendChild(c6);
+
+    // 7. Sign off
+    var c7 = tcCard('7. Sign off', 'Your name and licence go on the certificate.');
+    c7.appendChild(tcInput(d.signer, 'name', 'Electrician name *'));
+    c7.appendChild(tcInput(d.signer, 'licence', 'Electrician licence number *'));
+    c7.appendChild(h('div', 'sf-sub', 'Sign in the box with your finger.'));
+    var cv = document.createElement('canvas');
+    cv.id = 'tcSig';
+    c7.appendChild(cv);
+    var clr = h('button', 'tc-x', 'Clear signature'); clr.type = 'button';
+    c7.appendChild(clr);
+    c7.appendChild(tcCheck(d, 'sendEmail', 'Email the certificate and test record now'));
+    c7.appendChild(tcInput(d, 'emailTo', 'Send to (owner)', 'email'));
+    c7.appendChild(tcInput(d, 'emailTo2', 'Also send to (builder, optional)', 'email'));
+    body.appendChild(c7);
+    setupSignature(cv, clr);
+    tcUpdateStatus();
+  }
+
+  function setupSignature(cv, clr) {
+    var ctx = null, drawing = false, last = null;
+    function size() {
+      var r = cv.getBoundingClientRect();
+      cv.width = Math.max(300, Math.round(r.width * 2)); cv.height = Math.round(140 * 2);
+      ctx = cv.getContext('2d');
+      ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#14213d';
+      if (tc.sig) { var im = new Image(); im.onload = function () { ctx.drawImage(im, 0, 0, cv.width, cv.height); }; im.src = tc.sig; }
+    }
+    setTimeout(size, 0);
+    function pt(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height }; }
+    cv.addEventListener('pointerdown', function (e) { drawing = true; last = pt(e); cv.setPointerCapture(e.pointerId); e.preventDefault(); });
+    cv.addEventListener('pointermove', function (e) {
+      if (!drawing) return;
+      var p = pt(e);
+      ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      last = p; e.preventDefault();
+    });
+    function end() { if (!drawing) return; drawing = false; tc.sig = cv.toDataURL('image/png'); tcChanged(); }
+    cv.addEventListener('pointerup', end);
+    cv.addEventListener('pointercancel', end);
+    clr.onclick = function () { ctx.clearRect(0, 0, cv.width, cv.height); tc.sig = ''; tcChanged(); };
+  }
+
+  // Same checks the server runs. Empty list = ready to issue.
+  function tcProblems(d) {
+    var p = [];
+    var need = function (ok, msg) { if (!ok) p.push(msg); };
+    var under = function (raw, max, label, required) {
+      var n = tnum(raw);
+      if (n === null) { if (required) p.push(label + ': reading missing'); return; }
+      if (!(n <= max)) p.push(label + ': ' + raw + ' is over the ' + max + ' limit');
+    };
+    var volts = function (raw, range, label) {
+      var n = tnum(raw);
+      if (n === null) { p.push(label + ': reading missing'); return; }
+      if (n < range[0] || n > range[1]) p.push(label + ': ' + raw + ' V is outside ' + range.join('-') + ' V');
+    };
+    need(d.client.name.trim(), 'Customer name');
+    need(d.site.address.trim(), 'Site address');
+    need(String(d.work || '').trim(), 'Description of the work');
+    need(d.sow.pcName.trim(), 'Safe system of work: who gave permission');
+    need(d.sow.procedures && d.sow.jsa && d.sow.isolated && d.sow.lockedOut && d.sow.testedDead, 'Safe system of work: tick every step');
+    TC_VIS.forEach(function (v) { need(d.visual[v[0]].res, 'Visual inspection: ' + v[1] + ' (Pass or N/A)'); });
+    d.rooms.forEach(function (r) { need(r.ok, 'Room check: ' + r.name); });
+    under(d.earth.main, TC_EARTH, 'Main earth', true);
+    under(d.earth.board, TC_EARTH, 'Switchboard earth', d.mode === 'build');
+    under(d.earth.bonding, TC_EARTH, 'Equipotential bonding', false);
+    d.earth.others.forEach(function (o) { under(o.val, TC_EARTH, 'Bonding: ' + o.name, true); });
+    need(d.circuits.length, 'Add at least one circuit');
+    d.circuits.forEach(function (c, i) {
+      var label = c.name || 'Circuit ' + (i + 1);
+      need(String(c.name || '').trim(), 'Circuit ' + (i + 1) + ': name');
+      need(c.amps, label + ': breaker size');
+      var ir = tnum(c.ir);
+      if (ir === null) p.push(label + ' insulation resistance: reading missing');
+      else if (ir < TC_IR) p.push(label + ' insulation resistance: ' + c.ir + ' is under ' + TC_IR + ' MΩ');
+      need(c.polarity, label + ': polarity');
+      need(c.connections, label + ': correct circuit connections');
+      var rl = rpheLim(c);
+      if (!rl) p.push(label + ': enter the Table 8.2 limit for fault loop resistance');
+      else under(c.rphe, rl, label + ' fault loop resistance', true);
+      if (c.amps) under(c.zs, zsLim(Number(c.amps), c.curve), label + ' fault loop impedance', true);
+      if (c.rcd) under(c.rcdMs, rcdMax(), label + ' RCD trip time', true);
+    });
+    need(d.mains.men, 'MEN link reconnected');
+    volts(d.mains.v.an, TC_VPN, 'Supply volts A-N');
+    volts(d.mains.v.ae, TC_VPN, 'Supply volts A-E');
+    if (d.phase === '3') {
+      volts(d.mains.v.bn, TC_VPN, 'Supply volts B-N'); volts(d.mains.v.cn, TC_VPN, 'Supply volts C-N');
+      volts(d.mains.v.ab, TC_VPP, 'Supply volts A-B'); volts(d.mains.v.ac, TC_VPP, 'Supply volts A-C'); volts(d.mains.v.bc, TC_VPP, 'Supply volts B-C');
+    }
+    if (d.circuits.some(function (c) { return c.rcd; })) need(d.rcd.button && d.rcd.correctCircuit, 'RCD: test button and correct circuit ticks');
+    need(d.signer.name.trim() && d.signer.licence.trim(), 'Electrician name and licence number');
+    need(tc && tc.sig, 'Signature');
+    if (d.sendEmail) {
+      var e1 = cleanEmailInput(d.emailTo), e2 = cleanEmailInput(d.emailTo2);
+      need(e1 && EMAIL_OK.test(e1), 'Email to send the certificate to');
+      need(!e2 || EMAIL_OK.test(e2), 'Second email doesn\'t look right');
+    }
+    return p;
+  }
+  function tcUpdateStatus() {
+    if (!tc) return;
+    var p = tcProblems(tc.d);
+    var fails = p.filter(function (x) { return /over the|under |outside/.test(x); }).length;
+    var st = document.getElementById('tcStatus');
+    st.style.color = fails ? '#a01c15' : p.length ? '#5f6368' : '#1e6b34';
+    st.textContent = fails ? fails + ' reading' + (fails > 1 ? 's' : '') + ' failing · ' + p.length + ' to sort'
+      : p.length ? p.length + ' thing' + (p.length > 1 ? 's' : '') + ' still to fill in' : '✓ Everything passes. Ready to issue.';
+  }
+  function showTcProblems(list) {
+    var box = document.getElementById('tcProblems');
+    box.innerHTML = '<b>Can\'t issue the certificate yet:</b><ul>' + list.slice(0, 15).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') +
+      (list.length > 15 ? '<li>…and ' + (list.length - 15) + ' more</li>' : '') + '</ul>';
+    box.style.display = 'block';
+    document.getElementById('tcEd').scrollTop = 0;
+  }
+  document.getElementById('tcSubmit').onclick = function () {
+    var p = tcProblems(tc.d);
+    if (p.length) { showTcProblems(p); return; }
+    document.getElementById('tcProblems').style.display = 'none';
+    var btn = this;
+    btn.disabled = true; btn.textContent = 'Building the certificate…';
+    tcSaveNow();
+    var to = tc.d.sendEmail ? [cleanEmailInput(tc.d.emailTo), cleanEmailInput(tc.d.emailTo2)].filter(Boolean) : [];
+    toast('Building the certificate and test record. This takes about 20 seconds…', true);
+    api({ action: 'testSave', data: tc.d, signature: tc.sig, emailTo: to }).then(function (res) {
+      btn.disabled = false; btn.textContent = 'Create certificate';
+      if (res.ok) {
+        var all = tcDrafts(); delete all[tc.id]; tcSaveDrafts(all);
+        document.getElementById('tcEd').style.display = 'none';
+        state.lastCert = res;
+        toast(res.certNo + ' issued' + (res.emailed && res.emailed.length ? ' and emailed to ' + res.emailed.join(', ') : '') +
+          (res.warning === 'email_failed' ? ', but the email didn\'t send. Open it from Certificates issued.' : '.'), true);
+        setTimeout(function () { var t = document.getElementById('toast'); if (t.textContent.indexOf(res.certNo) === 0) t.style.display = 'none'; }, 9000);
+        tc = null;
+        go('tests');
+        load();
+      } else if (res.error === 'not_passed') {
+        showTcProblems(res.problems || ['Something didn\'t pass.']);
+        toast('Not issued. Check the list at the top.');
+      } else if (res.error === 'bad_action') {
+        toast('This needs the latest script update before it can issue certificates. Your draft is saved.');
+      } else {
+        toast('Couldn\'t build the certificate (' + (res.error || 'error') + '). Your draft is saved, try again.');
+      }
+    }).catch(function () {
+      btn.disabled = false; btn.textContent = 'Create certificate';
+      toast('No connection. Your draft is saved on this phone, try again with signal.');
+    });
+  };
+
+  // Test & compliance screen: drafts on this phone + certificates issued.
+  function renderTests() {
+    var all = tcDrafts();
+    var ids = Object.keys(all).sort(function (a, b) { return (all[b].saved || 0) - (all[a].saved || 0); });
+    var dc = document.getElementById('tcDraftsCard');
+    var dl = document.getElementById('tcDrafts');
+    dl.innerHTML = '';
+    dc.style.display = ids.length ? 'block' : 'none';
+    ids.forEach(function (id) {
+      var el = h('div', 'pj');
+      var when = new Date(all[id].saved || Date.now());
+      el.innerHTML = '<div><b>' + esc(all[id].label || 'Draft') + '</b><div class="where">Saved ' + when.toLocaleDateString('en-AU') + ' ' +
+        when.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' }) + '</div></div>';
+      var del = h('button', 'tc-x', 'delete'); del.type = 'button';
+      del.onclick = function (ev) { ev.stopPropagation(); if (confirm('Delete this draft?')) { var a = tcDrafts(); delete a[id]; tcSaveDrafts(a); renderTests(); } };
+      el.appendChild(del);
+      el.onclick = function () { resumeDraft(id); };
+      dl.appendChild(el);
+    });
+    var list = document.getElementById('tcList');
+    api({ action: 'testList' }).then(function (res) {
+      if (!res.ok) { list.innerHTML = '<div class="sf-sub">' + (res.error === 'bad_action' ? 'Needs the latest script update.' : 'Couldn\'t load, try again.') + '</div>'; return; }
+      if (!res.items.length) { list.innerHTML = '<div class="sf-sub">None yet. Your first one will show here.</div>'; return; }
+      list.innerHTML = '';
+      res.items.forEach(function (it) {
+        var el = h('div', 'sr');
+        el.innerHTML = '<div class="name">' + esc(it.certNo) + ' · ' + esc(it.client) + '</div>' +
+          '<div class="where">' + esc(it.site) + (it.testDate ? ' · tested ' + auDate(it.testDate) : '') + '</div>' +
+          (it.work ? '<div class="jobs">' + esc(it.work) + '</div>' : '') +
+          (it.emailed ? '<div class="jobs">Emailed to ' + esc(it.emailed) + '</div>' : '');
+        var row = h('div', 'row');
+        if (it.certUrl) row.appendChild(btnLink('Certificate', it.certUrl, true));
+        if (it.recordUrl) row.appendChild(btnLink('Test record', it.recordUrl, true));
+        el.appendChild(row);
+        list.appendChild(el);
+      });
+    }).catch(function () { list.innerHTML = '<div class="sf-sub">No connection.</div>'; });
+  }
+  document.getElementById('tcStandalone').onclick = function () { openTest(null); };
+  document.getElementById('tcForJob').onclick = function () {
+    var jobs = sortedJobs(state.jobs.filter(function (j) { return ['Lost', 'Cancelled', 'New Enquiry'].indexOf(j.status) === -1; }));
+    openPickJob('Test for which job?', 'Booked, done and invoiced jobs. Old paid jobs: use No job (standalone).', jobs, function (j) { openTest(j); });
+  };
+
   document.getElementById('refreshBtn').onclick = load;
   document.getElementById('summaryBtn').onclick = function () {
     var b = this;
@@ -2120,7 +2960,7 @@
     });
   };
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && document.getElementById('app').style.display !== 'none') load();
+    if (document.visibilityState === 'visible' && loggedIn() && (PW || TOKEN)) load();
   });
   if (TOKEN || PW) { showApp(); load(); } else { showLogin(false); }
 </script>
